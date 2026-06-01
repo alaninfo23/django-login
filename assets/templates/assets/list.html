@@ -1,0 +1,80 @@
+{% extends "assets/base.html" %}
+{% block title %}Meus Bens{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+    <h1>Meus Bens</h1>
+    <a href="{% url 'asset_create' %}" class="btn btn-primary">+ Novo Bem</a>
+</div>
+
+<form method="get" style="background:white; padding:1rem; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.08); display:flex; flex-wrap:wrap; gap:.75rem; margin-bottom:1.5rem; align-items:flex-end;">
+    <div>
+        <label style="display:block; font-size:.8rem; font-weight:600; margin-bottom:.2rem;">Busca</label>
+        <input type="text" name="q" value="{{ filters.q }}" placeholder="Nome do bem" style="padding:.5rem .7rem; border:1px solid #d1d5db; border-radius:4px;">
+    </div>
+    <div>
+        <label style="display:block; font-size:.8rem; font-weight:600; margin-bottom:.2rem;">Tipo</label>
+        <select name="asset_type" style="padding:.5rem .7rem; border:1px solid #d1d5db; border-radius:4px;">
+            <option value="">Todos</option>
+            {% for val, label in asset_types.choices %}
+            <option value="{{ val }}" {% if filters.asset_type == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label style="display:block; font-size:.8rem; font-weight:600; margin-bottom:.2rem;">Status</label>
+        <select name="status" style="padding:.5rem .7rem; border:1px solid #d1d5db; border-radius:4px;">
+            <option value="">Todos</option>
+            {% for val, label in statuses.choices %}
+            <option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label style="display:block; font-size:.8rem; font-weight:600; margin-bottom:.2rem;">Ordenar por</label>
+        <select name="order" style="padding:.5rem .7rem; border:1px solid #d1d5db; border-radius:4px;">
+            <option value="-created_at"    {% if filters.order == '-created_at'    %}selected{% endif %}>Mais recentes</option>
+            <option value="created_at"     {% if filters.order == 'created_at'     %}selected{% endif %}>Mais antigos</option>
+            <option value="acquisition_value"  {% if filters.order == 'acquisition_value'  %}selected{% endif %}>Valor ↑</option>
+            <option value="-acquisition_value" {% if filters.order == '-acquisition_value' %}selected{% endif %}>Valor ↓</option>
+            <option value="purchase_date"  {% if filters.order == 'purchase_date'  %}selected{% endif %}>Data compra ↑</option>
+            <option value="-purchase_date" {% if filters.order == '-purchase_date' %}selected{% endif %}>Data compra ↓</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+    <a href="{% url 'asset_list' %}" class="btn btn-secondary">Limpar</a>
+</form>
+
+{% if assets %}
+<table style="width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.1);">
+    <thead style="background:#4f46e5; color:white;">
+        <tr>
+            <th style="padding:.75rem 1rem; text-align:left;">Nome</th>
+            <th style="padding:.75rem 1rem; text-align:left;">Tipo</th>
+            <th style="padding:.75rem 1rem; text-align:left; min-width:120px;">Valor</th>
+            <th style="padding:.75rem 1rem; text-align:left;">Data Compra</th>
+            <th style="padding:.75rem 1rem; text-align:left;">Status</th>
+            <th style="padding:.75rem 1rem; text-align:left;">Localização</th>
+            <th style="padding:.75rem 1rem;"></th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for asset in assets %}
+        <tr style="border-bottom:1px solid #e5e7eb;">
+            <td style="padding:.75rem 1rem;">{{ asset.name }}</td>
+            <td style="padding:.75rem 1rem;">{{ asset.get_asset_type_display }}</td>
+            <td style="padding:.75rem 1rem; white-space:nowrap;">R$ {{ asset.acquisition_value }}</td>
+            <td style="padding:.75rem 1rem;">{{ asset.purchase_date|date:"d/m/Y"|default:"—" }}</td>
+            <td style="padding:.75rem 1rem;">{{ asset.get_status_display }}</td>
+            <td style="padding:.75rem 1rem;">{{ asset.location|default:"—" }}</td>
+            <td style="padding:.75rem 1rem; white-space:nowrap;">
+                <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-secondary" style="margin-right:.3rem;">Editar</a>
+                <a href="{% url 'asset_delete' asset.pk %}" class="btn btn-danger">Deletar</a>
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p style="color:#6b7280;">Nenhum bem encontrado. <a href="{% url 'asset_list' %}">Limpar filtros</a> ou <a href="{% url 'asset_create' %}">cadastrar novo</a>.</p>
+{% endif %}
+{% endblock %}
