@@ -30,6 +30,7 @@
 <div class="tables">
     <div>
         <h2 style="margin-bottom:.75rem; font-size:1rem;">Por Tipo</h2>
+        <div style="overflow-x:auto;">
         <table>
             <thead><tr><th>Tipo</th><th>Qtd</th></tr></thead>
             <tbody>
@@ -40,9 +41,11 @@
             {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
     <div>
         <h2 style="margin-bottom:.75rem; font-size:1rem;">Por Status</h2>
+        <div style="overflow-x:auto;">
         <table>
             <thead><tr><th>Status</th><th>Qtd</th></tr></thead>
             <tbody>
@@ -53,6 +56,7 @@
             {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 {% endblock %}
