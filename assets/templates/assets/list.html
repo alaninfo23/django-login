@@ -46,7 +46,21 @@
 </form>
 
 {% if assets %}
-<div style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
+<style>
+    .asset-cards { display: none; }
+    @media(max-width:640px) {
+        .asset-table-wrap { display: none; }
+        .asset-cards { display: block; }
+        .asset-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); padding: 1rem; margin-bottom: 1rem; }
+        .asset-card .card-title { font-weight: 700; font-size: 1rem; margin-bottom: .5rem; color: #111; }
+        .asset-card .card-row { display: flex; justify-content: space-between; font-size: .875rem; padding: .2rem 0; border-bottom: 1px solid #f3f4f6; color: #444; }
+        .asset-card .card-row span:first-child { color: #6b7280; }
+        .asset-card .card-actions { margin-top: .75rem; display: flex; gap: .5rem; }
+    }
+</style>
+
+<!-- Tabela (desktop) -->
+<div class="asset-table-wrap" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
 <table style="width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.1); min-width:600px;">
     <thead style="background:#4f46e5; color:white;">
         <tr>
@@ -77,6 +91,25 @@
     </tbody>
 </table>
 </div>
+
+<!-- Cards (mobile) -->
+<div class="asset-cards">
+{% for asset in assets %}
+    <div class="asset-card">
+        <div class="card-title">{{ asset.name }}</div>
+        <div class="card-row"><span>Tipo</span><span>{{ asset.get_asset_type_display }}</span></div>
+        <div class="card-row"><span>Valor</span><span>R$ {{ asset.acquisition_value|brl }}</span></div>
+        <div class="card-row"><span>Data Compra</span><span>{{ asset.purchase_date|date:"d/m/Y"|default:"—" }}</span></div>
+        <div class="card-row"><span>Status</span><span>{{ asset.get_status_display }}</span></div>
+        <div class="card-row"><span>Localização</span><span>{{ asset.location|default:"—" }}</span></div>
+        <div class="card-actions">
+            <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-secondary">Editar</a>
+            <a href="{% url 'asset_delete' asset.pk %}" class="btn btn-danger">Deletar</a>
+        </div>
+    </div>
+{% endfor %}
+</div>
+
 {% else %}
 <p style="color:#6b7280;">Nenhum bem encontrado. <a href="{% url 'asset_list' %}">Limpar filtros</a> ou <a href="{% url 'asset_create' %}">cadastrar novo</a>.</p>
 {% endif %}
