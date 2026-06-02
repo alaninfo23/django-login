@@ -1,4 +1,5 @@
 {% extends "assets/base.html" %}
+{% load asset_filters %}
 {% block title %}Meus Bens{% endblock %}
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
@@ -62,7 +63,7 @@
         <tr style="border-bottom:1px solid #e5e7eb;">
             <td style="padding:.75rem 1rem;">{{ asset.name }}</td>
             <td style="padding:.75rem 1rem;">{{ asset.get_asset_type_display }}</td>
-            <td style="padding:.75rem 1rem; white-space:nowrap;">R$ {{ asset.acquisition_value }}</td>
+            <td style="padding:.75rem 1rem; white-space:nowrap;">R$ {{ asset.acquisition_value|brl }}</td>
             <td style="padding:.75rem 1rem;">{{ asset.purchase_date|date:"d/m/Y"|default:"—" }}</td>
             <td style="padding:.75rem 1rem;">{{ asset.get_status_display }}</td>
             <td style="padding:.75rem 1rem;">{{ asset.location|default:"—" }}</td>

@@ -1,4 +1,5 @@
 {% extends "assets/base.html" %}
+{% load asset_filters %}
 {% block title %}{% if asset %}Editar{% else %}Novo{% endif %} Bem{% endblock %}
 {% block content %}
 <h1 style="margin-bottom:1.5rem;">{% if asset %}Editar Bem{% else %}Novo Bem{% endif %}</h1>
@@ -26,7 +27,10 @@
     </div>
     <div class="field">
         <label>Valor de Aquisição (R$) *</label>
-        <input type="number" name="acquisition_value" step="0.01" min="0" value="{{ asset.acquisition_value|default:'' }}" required>
+        <input type="text" id="acquisition_value_display" placeholder="0,00"
+               value="{% if asset.acquisition_value %}{{ asset.acquisition_value|brl }}{% endif %}"
+               inputmode="numeric" required>
+        <input type="hidden" name="acquisition_value" id="acquisition_value">
     </div>
     <div class="field">
         <label>Data de Compra</label>
@@ -54,4 +58,32 @@
         <a href="{% url 'asset_list' %}" class="btn btn-secondary">Cancelar</a>
     </div>
 </form>
+
+<script>
+const display = document.getElementById('acquisition_value_display');
+const hidden  = document.getElementById('acquisition_value');
+
+function formatBRL(val) {
+    val = val.replace(/\D/g, '');
+    if (!val) return '';
+    val = (parseInt(val) / 100).toFixed(2);
+    const [int, dec] = val.split('.');
+    return int.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + dec;
+}
+
+function toDecimal(val) {
+    return val.replace(/\./g, '').replace(',', '.');
+}
+
+display.addEventListener('input', () => {
+    display.value = formatBRL(display.value);
+});
+
+display.closest('form').addEventListener('submit', () => {
+    hidden.value = toDecimal(display.value);
+});
+
+// init hidden on load (edit mode)
+if (display.value) hidden.value = toDecimal(display.value);
+</script>
 {% endblock %}

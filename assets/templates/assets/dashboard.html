@@ -1,4 +1,5 @@
 {% extends "assets/base.html" %}
+{% load asset_filters %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
 <h1 style="margin-bottom:1.5rem;">Dashboard</h1>
@@ -22,7 +23,7 @@
     </div>
     <div class="card">
         <div class="label">Patrimônio Total</div>
-        <div class="value" style="font-size:1.4rem;">R$ {{ patrimonio }}</div>
+        <div class="value" style="font-size:1.4rem;">R$ {{ patrimonio|brl }}</div>
     </div>
 </div>
 
