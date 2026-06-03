@@ -16,7 +16,10 @@
     <h2>Olá, {{ user.username }}! 👋</h2>
     <p>Você está logado.</p>
     <br>
-    <a href="{% url 'logout' %}">Sair</a>
+    <form method="post" action="{% url 'logout' %}">
+        {% csrf_token %}
+        <button type="submit" style="background:none;border:none;color:#4f46e5;cursor:pointer;font-size:1rem;padding:0;">Sair</button>
+    </form>
 </div>
 </body>
 </html>
