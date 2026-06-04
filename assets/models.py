@@ -5,12 +5,19 @@ from django.db import models
 class Asset(models.Model):
 
     class AssetType(models.TextChoices):
-        CAR       = 'carro',    'Carro'
-        MOTO      = 'moto',     'Moto'
-        TRUCK     = 'caminhao', 'Caminhão'
-        PROPERTY  = 'imovel',   'Imóvel'
-        MACHINE   = 'maquina',  'Máquina'
-        OTHER     = 'outro',    'Outro'
+        CAR           = 'carro',           'Carro'
+        MOTO          = 'moto',            'Moto'
+        TRUCK         = 'caminhao',        'Caminhão'
+        UTILITY       = 'utilitario',      'Veículo Utilitário'
+        PROPERTY      = 'imovel',          'Imóvel'
+        STORE         = 'loja',            'Loja / Ponto Comercial'
+        MACHINE       = 'maquina',         'Máquina / Equipamento'
+        IT            = 'ti',              'Equipamento de TI'
+        FURNITURE     = 'moveis',          'Móveis / Utensílios'
+        STOCK         = 'estoque',         'Estoque / Mercadoria'
+        INVESTMENT    = 'investimento',    'Investimento (Banco/Aplicação)'
+        PARTNERSHIP   = 'participacao',    'Participação Societária'
+        OTHER         = 'outro',           'Outro'
 
     class Status(models.TextChoices):
         ACTIVE  = 'ativo',    'Ativo'
