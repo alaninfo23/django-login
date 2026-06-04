@@ -77,7 +77,7 @@
     {% for asset in assets %}
         <tr style="border-bottom:1px solid #e5e7eb;">
             <td style="padding:.75rem 1rem;">{{ asset.name }}</td>
-            <td style="padding:.75rem 1rem;">{{ asset.get_asset_type_display }}</td>
+            <td style="padding:.75rem 1rem; max-width:140px;">{{ asset.get_asset_type_display }}</td>
             <td style="padding:.75rem 1rem; white-space:nowrap;">R$ {{ asset.acquisition_value|brl }}</td>
             <td style="padding:.75rem 1rem;">{{ asset.purchase_date|date:"d/m/Y"|default:"—" }}</td>
             <td style="padding:.75rem 1rem;">{{ asset.get_status_display }}</td>
