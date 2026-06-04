@@ -18,8 +18,7 @@
 </head>
 <body>
 <div class="card">
-    <img src="{% static 'accounts/logo_pp.png' %}" alt="Logo" style="display:block;margin:0 auto 1rem;max-width:120px;">
-    <h2>Login</h2>
+    <img src="{% static 'accounts/logo_pp.png' %}" alt="Logo" style="display:block;width:100%;margin-bottom:1.5rem;">
     {% if error %}<p class="error">{{ error }}</p>{% endif %}
     <form method="post">
         {% csrf_token %}
