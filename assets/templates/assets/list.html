@@ -69,7 +69,6 @@
             <th style="padding:.75rem 1rem; text-align:left; min-width:120px;">Valor</th>
             <th style="padding:.75rem 1rem; text-align:left;">Data Compra</th>
             <th style="padding:.75rem 1rem; text-align:left;">Status</th>
-            <th style="padding:.75rem 1rem; text-align:left;">Localização</th>
             <th style="padding:.75rem 1rem; white-space:nowrap; min-width:130px;"></th>
         </tr>
     </thead>
@@ -81,7 +80,6 @@
             <td style="padding:.75rem 1rem; white-space:nowrap;">R$ {{ asset.acquisition_value|brl }}</td>
             <td style="padding:.75rem 1rem;">{{ asset.purchase_date|date:"d/m/Y"|default:"—" }}</td>
             <td style="padding:.75rem 1rem;">{{ asset.get_status_display }}</td>
-            <td style="padding:.75rem 1rem;">{{ asset.location|default:"—" }}</td>
             <td style="padding:.75rem 1rem; white-space:nowrap;">
                 <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-secondary" style="margin-right:.3rem;">Editar</a>
                 <a href="{% url 'asset_delete' asset.pk %}" class="btn btn-danger">Deletar</a>
