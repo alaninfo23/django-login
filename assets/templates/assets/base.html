@@ -20,6 +20,21 @@
         .btn-danger:hover  { background: #b91c1c; }
         .btn-secondary { background: #6b7280; color: white; }
         .btn-secondary:hover { background: #4b5563; }
+
+        .dropdown { position: relative; }
+        .dropdown-btn { background: none; border: none; color: white; cursor: pointer; font-size: .95rem; padding: 0; }
+        .dropdown-btn:hover { text-decoration: underline; }
+        .dropdown-menu { display: none; position: absolute; right: 0; top: 1.8rem;
+            background: white; border: 1px solid #ddd; border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,.15); min-width: 160px; z-index: 100; overflow: hidden; }
+        .dropdown:hover .dropdown-menu { display: block; }
+        .dropdown-menu a,
+        .dropdown-menu button { display: block; width: 100%; padding: .6rem 1rem; text-align: left;
+            background: none; border: none; font-size: .9rem; color: #333; cursor: pointer;
+            text-decoration: none; box-sizing: border-box; }
+        .dropdown-menu a:hover,
+        .dropdown-menu button:hover { background: #f5f5f5; }
+        .dropdown-menu button { color: #dc2626; }
     </style>
 </head>
 <body>
@@ -28,7 +43,16 @@
         <a href="{% url 'asset_list' %}">📦 Meus Bens</a>
         <a href="{% url 'dashboard' %}">📊 Dashboard</a>
     </div>
-    <a href="{% url 'logout' %}">Sair ({{ user.username }})</a>
+    <div class="dropdown">
+        <button class="dropdown-btn">{{ user.username }} ▾</button>
+        <div class="dropdown-menu">
+            <a href="{% url 'password_change' %}">Alterar senha</a>
+            <form method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="submit">Sair</button>
+            </form>
+        </div>
+    </div>
 </nav>
 <div class="container">
     {% block content %}{% endblock %}
