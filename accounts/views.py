@@ -22,11 +22,12 @@ def _check_lockout(request):
 
 
 def login_view(request):
-    error = None
+    error = request.session.pop('login_error', None)
     if request.method == 'POST':
         locked, msg = _check_lockout(request)
         if locked:
-            return render(request, 'accounts/login.html', {'error': msg})
+            request.session['login_error'] = msg
+            return redirect('login')
 
         user = authenticate(request,
                             username=request.POST.get('username', ''),
@@ -40,9 +41,10 @@ def login_view(request):
         request.session['login_attempts'] = attempts
         if attempts >= MAX_ATTEMPTS:
             request.session['lockout_until'] = timezone.now().timestamp() + LOCKOUT_SECONDS
-            error = f'Conta bloqueada por {LOCKOUT_SECONDS // 60} minutos após {MAX_ATTEMPTS} tentativas.'
+            request.session['login_error'] = f'Conta bloqueada por {LOCKOUT_SECONDS // 60} minutos após {MAX_ATTEMPTS} tentativas.'
         else:
-            error = f'Usuário ou senha inválidos. ({attempts}/{MAX_ATTEMPTS} tentativas)'
+            request.session['login_error'] = f'Usuário ou senha inválidos. ({attempts}/{MAX_ATTEMPTS} tentativas)'
+        return redirect('login')
 
     return render(request, 'accounts/login.html', {'error': error})
 
