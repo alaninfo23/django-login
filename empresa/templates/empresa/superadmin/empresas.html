@@ -1,0 +1,49 @@
+{% extends "assets/base.html" %}
+{% block title %}Super-Admin — Empresas{% endblock %}
+{% block extra_styles %}
+.data-table-wrap{overflow-x:auto;background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);}
+.data-table{width:100%;border-collapse:collapse;}
+.data-table thead tr{background:linear-gradient(135deg,#1e1b4b,#4f46e5);}
+.data-table th{padding:.75rem 1rem;text-align:left;color:white;font-size:.82rem;font-weight:600;}
+.data-table td{padding:.75rem 1rem;border-bottom:1px solid #f1f5f9;font-size:.88rem;color:#334155;}
+.data-table tbody tr:last-child td{border-bottom:none;}
+.data-table tbody tr:hover td{background:#f8fafc;}
+.badge{display:inline-block;padding:.2rem .65rem;border-radius:999px;font-size:.75rem;font-weight:600;}
+.badge-ativa{background:#d1fae5;color:#065f46;}
+.badge-inativa{background:#fee2e2;color:#dc2626;}
+{% endblock %}
+{% block content %}
+<div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:.75rem 1rem;border-radius:8px;margin-bottom:1.5rem;font-size:.88rem;color:#92400e;">
+  🔐 Painel exclusivo do administrador do sistema
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;">🏢 Empresas Cadastradas</h1>
+  <a href="{% url 'superadmin_empresa_criar' %}" class="btn btn-primary">+ Nova Empresa</a>
+</div>
+<div class="data-table-wrap">
+  <table class="data-table">
+    <thead><tr><th>Empresa</th><th>Slug</th><th>Membros</th><th>Criada em</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for e in empresas %}
+    <tr>
+      <td><strong>{{ e.nome }}</strong></td>
+      <td style="color:#64748b;font-size:.82rem;">{{ e.slug }}</td>
+      <td>{{ e.membros.count }}</td>
+      <td>{{ e.criada_em|date:"d/m/Y" }}</td>
+      <td><span class="badge badge-{% if e.ativa %}ativa{% else %}inativa{% endif %}">{% if e.ativa %}Ativa{% else %}Inativa{% endif %}</span></td>
+      <td>
+        <form method="post" action="{% url 'superadmin_empresa_toggle' e.pk %}" style="display:inline">
+          {% csrf_token %}
+          <button type="submit" class="btn {% if e.ativa %}btn-danger{% else %}btn-primary{% endif %}" style="padding:.3rem .75rem;font-size:.82rem;">
+            {% if e.ativa %}Desativar{% else %}Ativar{% endif %}
+          </button>
+        </form>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhuma empresa cadastrada.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

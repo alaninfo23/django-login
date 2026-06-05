@@ -1,0 +1,81 @@
+{% extends "assets/base.html" %}
+{% load fin_filters %}
+{% block title %}Despesas{% endblock %}
+{% block extra_styles %}
+.filter-bar{background:white;padding:1rem 1.25rem;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);display:flex;flex-wrap:wrap;gap:.75rem;align-items:flex-end;margin-bottom:1.5rem;}
+.filter-field{display:flex;flex-direction:column;gap:.25rem;}
+.filter-field label{font-size:.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;}
+.filter-field input{padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:6px;font-size:.88rem;}
+.filter-field input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.data-table-wrap{overflow-x:auto;background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);}
+.data-table{width:100%;border-collapse:collapse;min-width:700px;}
+.data-table thead tr{background:linear-gradient(135deg,#1e1b4b,#4f46e5);}
+.data-table th{padding:.75rem 1rem;text-align:left;color:white;font-size:.82rem;font-weight:600;letter-spacing:.03em;}
+.data-table td{padding:.75rem 1rem;border-bottom:1px solid #f1f5f9;font-size:.88rem;color:#334155;}
+.data-table tbody tr:last-child td{border-bottom:none;}
+.data-table tbody tr:hover td{background:#f8fafc;}
+.data-table tfoot td{padding:.85rem 1rem;font-weight:700;font-size:.95rem;background:#f8fafc;border-top:2px solid #e2e8f0;}
+.badge{display:inline-block;padding:.2rem .65rem;border-radius:999px;font-size:.75rem;font-weight:600;}
+.badge-pago{background:#d1fae5;color:#065f46;}
+.badge-pendente{background:#fef3c7;color:#92400e;}
+.pagination{display:flex;gap:.4rem;margin-top:1.25rem;align-items:center;}
+.pagination a,.pagination span{padding:.4rem .75rem;border-radius:6px;font-size:.85rem;text-decoration:none;}
+.pagination a{background:white;color:#4f46e5;border:1px solid #c7d2fe;}
+.pagination a:hover{background:#f5f3ff;}
+.pagination .current{background:#4f46e5;color:white;border:1px solid #4f46e5;}
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;">💸 Despesas</h1>
+  <a href="{% url 'despesa_create' %}" class="btn btn-primary">+ Nova Despesa</a>
+</div>
+<form method="get" class="filter-bar">
+  <div class="filter-field"><label>Mês</label><input type="month" name="mes" value="{{ mes }}"></div>
+  <div class="filter-field"><label>Centro de Custo</label><input type="text" name="centro" value="{{ centro }}" placeholder="Filtrar..."></div>
+  <div class="filter-field"><label>SubGrupo</label><input type="text" name="subgrupo" value="{{ subgrupo }}" placeholder="Filtrar..."></div>
+  <button type="submit" class="btn btn-primary">Filtrar</button>
+  <a href="{% url 'despesa_list' %}" class="btn btn-outline">Limpar</a>
+</form>
+{% if page_obj.object_list %}
+<div class="data-table-wrap">
+  <table class="data-table">
+    <thead><tr><th>Data</th><th>Centro de Custo</th><th>SubGrupo</th><th>Descrição</th><th>Forma Pag.</th><th>Situação</th><th>Valor</th><th></th></tr></thead>
+    <tbody>
+    {% for d in page_obj %}
+    <tr>
+      <td>{{ d.data|date:"d/m/Y" }}</td>
+      <td>{{ d.centro_custo }}</td>
+      <td>{{ d.subgrupo }}</td>
+      <td>{{ d.descricao|truncatechars:40 }}</td>
+      <td>{{ d.forma_pagamento }}</td>
+      <td><span class="badge badge-{{ d.situacao }}">{{ d.get_situacao_display }}</span></td>
+      <td style="font-family:monospace;white-space:nowrap;">{{ d.valor|brl }}</td>
+      <td style="white-space:nowrap;">
+        <a href="{% url 'despesa_edit' d.pk %}" class="btn btn-secondary" style="padding:.35rem .75rem;font-size:.82rem;">Editar</a>
+        <a href="{% url 'despesa_delete' d.pk %}" class="btn btn-danger" style="padding:.35rem .75rem;font-size:.82rem;">Excluir</a>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr>
+      <td colspan="6" style="text-align:right;color:#64748b;">Total filtrado:</td>
+      <td style="font-family:monospace;">{{ total|brl }}</td>
+      <td></td>
+    </tr></tfoot>
+  </table>
+</div>
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+  {% if page_obj.has_previous %}<a href="?mes={{ mes }}&centro={{ centro }}&subgrupo={{ subgrupo }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>{% endif %}
+  <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a href="?mes={{ mes }}&centro={{ centro }}&subgrupo={{ subgrupo }}&page={{ page_obj.next_page_number }}">Próxima ›</a>{% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="card" style="text-align:center;padding:3rem 1rem;color:#94a3b8;">
+  <div style="font-size:2.5rem;margin-bottom:1rem;">📭</div>
+  <p style="margin-bottom:.75rem;">Nenhuma despesa encontrada.</p>
+  <a href="{% url 'despesa_create' %}" class="btn btn-primary">Cadastrar despesa</a>
+</div>
+{% endif %}
+{% endblock %}

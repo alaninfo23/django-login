@@ -6,6 +6,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('accounts.urls')),
     path('assets/', include('assets.urls')),
+    path('financeiro/', include('financeiro.urls')),
+    path('empresa/', include('empresa.urls')),
     path('password-change/', auth_views.PasswordChangeView.as_view(
         template_name='registration/password_change_form.html',
         success_url='/password-change/done/'

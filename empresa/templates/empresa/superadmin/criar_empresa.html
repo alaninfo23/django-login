@@ -1,0 +1,39 @@
+{% extends "assets/base.html" %}
+{% block title %}Nova Empresa{% endblock %}
+{% block extra_styles %}
+.form-card{background:white;padding:2rem;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);max-width:520px;margin:0 auto;}
+.field{margin-bottom:1.2rem;}
+.field label{display:block;font-size:.875rem;font-weight:600;margin-bottom:.3rem;color:#334155;}
+.field input{width:100%;padding:.6rem .8rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.95rem;}
+.field input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.section-label{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin:1.5rem 0 .75rem;border-top:1px solid #f1f5f9;padding-top:1rem;}
+{% endblock %}
+{% block content %}
+<h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;margin-bottom:1.5rem;">🏢 Nova Empresa</h1>
+<div class="form-card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="field">
+      <label>Nome da Empresa *</label>
+      <input type="text" name="nome" placeholder="Ex: Transportadora Silva Ltda" required autofocus>
+    </div>
+    <div class="section-label">Usuário Administrador da Empresa</div>
+    <div class="field">
+      <label>Username *</label>
+      <input type="text" name="username" placeholder="Nome de login do admin">
+    </div>
+    <div class="field">
+      <label>Senha *</label>
+      <input type="password" name="password" placeholder="Senha inicial">
+    </div>
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" name="email" placeholder="email@empresa.com">
+    </div>
+    <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+      <button type="submit" class="btn btn-primary">Criar Empresa</button>
+      <a href="{% url 'superadmin_empresas' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

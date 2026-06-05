@@ -1,0 +1,88 @@
+{% extends "assets/base.html" %}
+{% block title %}Relatórios{% endblock %}
+
+{% block extra_styles %}
+.rel-card{background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);
+  padding:2rem;max-width:520px;margin:0 auto;}
+.field{margin-bottom:1.25rem;}
+.field label{display:block;font-size:.875rem;font-weight:600;margin-bottom:.35rem;color:#334155;}
+.field select,.field input{width:100%;padding:.6rem .8rem;border:1px solid #e2e8f0;
+  border-radius:7px;font-size:.95rem;transition:border-color .2s,box-shadow .2s;}
+.field select:focus,.field input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.fmt-group{display:flex;gap:.75rem;}
+.fmt-group label{flex:1;display:flex;align-items:center;gap:.5rem;padding:.65rem .9rem;
+  border:2px solid #e2e8f0;border-radius:8px;cursor:pointer;font-size:.9rem;font-weight:500;color:#334155;}
+.fmt-group input[type=radio]{accent-color:#4f46e5;}
+.fmt-group label:has(input:checked){border-color:#4f46e5;background:#f5f3ff;color:#4f46e5;}
+{% endblock %}
+
+{% block content %}
+<h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;margin-bottom:1.5rem;">📄 Relatórios</h1>
+
+<div class="rel-card">
+  <form method="get" action="" id="rel-form">
+    <div class="field">
+      <label>Período *</label>
+      <input type="month" name="mes" value="{{ mes_val }}" required>
+    </div>
+
+    <div class="field">
+      <label>Tipo de Relatório *</label>
+      <select name="tipo" required>
+        <option value="">Selecione...</option>
+        <option value="despesas_centro"  {% if tipo == 'despesas_centro'  %}selected{% endif %}>Despesas por Centro de Custo</option>
+        <option value="despesas_subgrupo" {% if tipo == 'despesas_subgrupo' %}selected{% endif %}>Despesas por SubGrupo</option>
+        <option value="repasses"         {% if tipo == 'repasses'          %}selected{% endif %}>Fluxo de Repasses</option>
+        <option value="completo"         {% if tipo == 'completo'          %}selected{% endif %}>Relatório Completo do Mês</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Formato *</label>
+      <div class="fmt-group">
+        <label><input type="radio" name="fmt" value="pdf" {% if fmt != 'excel' %}checked{% endif %}> 📄 PDF</label>
+        <label id="fmt-excel-label"><input type="radio" name="fmt" value="excel"> 📊 Excel</label>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:.7rem;">
+      Gerar Relatório
+    </button>
+  </form>
+</div>
+
+<script>
+// Desabilita Excel para relatório completo (só tem PDF)
+document.querySelector('[name=tipo]').addEventListener('change', function() {
+  const excelLabel = document.getElementById('fmt-excel-label');
+  const excelRadio = excelLabel.querySelector('input');
+  if (this.value === 'completo') {
+    excelRadio.disabled = true;
+    excelLabel.style.opacity = '.4';
+    excelLabel.style.cursor = 'not-allowed';
+    document.querySelector('[name=fmt][value=pdf]').checked = true;
+  } else {
+    excelRadio.disabled = false;
+    excelLabel.style.opacity = '1';
+    excelLabel.style.cursor = 'pointer';
+  }
+});
+
+// Redireciona para a URL correta de download ao submeter
+document.getElementById('rel-form').addEventListener('submit', function(e) {
+  e.preventDefault();
+  const mes  = this.mes.value;
+  const tipo = this.tipo.value;
+  const fmt  = this.fmt.value;
+  if (!mes || !tipo) return;
+
+  const urls = {
+    despesas_centro:  {pdf: '{% url "rel_despesas_centro_pdf" %}',   excel: '{% url "rel_despesas_centro_excel" %}'},
+    despesas_subgrupo:{pdf: '{% url "rel_despesas_subgrupo_pdf" %}',  excel: '{% url "rel_despesas_subgrupo_excel" %}'},
+    repasses:         {pdf: '{% url "rel_repasses_pdf" %}',           excel: '{% url "rel_repasses_excel" %}'},
+    completo:         {pdf: '{% url "rel_completo_pdf" %}',           excel: null},
+  };
+  window.location.href = urls[tipo][fmt] + '?mes=' + mes;
+});
+</script>
+{% endblock %}

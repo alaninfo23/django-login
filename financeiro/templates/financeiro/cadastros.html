@@ -1,0 +1,120 @@
+{% extends "assets/base.html" %}
+{% block title %}Cadastros{% endblock %}
+
+{% block extra_styles %}
+.tabs{display:flex;gap:.25rem;margin-bottom:1.5rem;border-bottom:2px solid #e2e8f0;}
+.tab{padding:.6rem 1.25rem;font-size:.88rem;font-weight:600;color:#64748b;cursor:pointer;
+  border:none;background:none;border-bottom:2px solid transparent;margin-bottom:-2px;text-decoration:none;}
+.tab.active{color:#4f46e5;border-bottom-color:#4f46e5;}
+.tab:hover{color:#4f46e5;}
+.panel{display:none;} .panel.active{display:grid;grid-template-columns:1fr 1.4fr;gap:1.5rem;}
+@media(max-width:640px){.panel.active{grid-template-columns:1fr;}}
+.card{background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);padding:1.5rem;}
+.field{margin-bottom:1rem;}
+.field label{display:block;font-size:.875rem;font-weight:600;margin-bottom:.3rem;color:#334155;}
+.field input{width:100%;padding:.6rem .8rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.95rem;}
+.field input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.item-row{display:flex;align-items:center;justify-content:space-between;padding:.6rem .75rem;
+  border-radius:7px;margin-bottom:.4rem;background:#f8fafc;font-size:.9rem;color:#334155;}
+.item-row:hover{background:#f1f5f9;}
+.item-actions{display:flex;gap:.4rem;flex-shrink:0;}
+{% endblock %}
+
+{% block content %}
+<h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;margin-bottom:1.25rem;">⚙️ Cadastros</h1>
+
+<div class="tabs">
+  <a href="?aba=centros"   class="tab {% if aba == 'centros' %}active{% endif %}">🏢 Centros de Custo</a>
+  <a href="?aba=subgrupos" class="tab {% if aba == 'subgrupos' %}active{% endif %}">🗂️ SubGrupos</a>
+  <a href="?aba=formas"    class="tab {% if aba == 'formas' %}active{% endif %}">💳 Formas de Pagamento</a>
+</div>
+
+{% for slug, label, itens in panels %}
+<div class="panel {% if aba == slug %}active{% endif %}">
+
+  <!-- Lista -->
+  <div class="card">
+    <div style="font-size:1rem;font-weight:600;color:#334155;margin-bottom:1rem;">{{ label }} cadastradas</div>
+    {% if itens %}
+      {% for item in itens %}
+      <div class="item-row">
+        <span>{{ item.nome }}</span>
+        <div class="item-actions">
+          <button onclick="editItem('{{ slug }}', {{ item.pk }}, '{{ item.nome|escapejs }}')"
+            class="btn btn-secondary" style="padding:.3rem .65rem;font-size:.78rem;">Editar</button>
+          <button type="button" onclick="confirmDelete(this)"
+            class="btn btn-danger" style="padding:.3rem .65rem;font-size:.78rem;"
+            data-nome="{{ item.nome|escapejs }}">Excluir</button>
+          <form method="post" class="delete-form" style="display:none">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="excluir">
+            <input type="hidden" name="pk" value="{{ item.pk }}">
+            <input type="hidden" name="nome" value="{{ item.nome }}">
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p style="color:#94a3b8;font-size:.88rem;">Nenhum cadastro ainda.</p>
+    {% endif %}
+  </div>
+
+  <!-- Formulário -->
+  <div class="card">
+    <div style="font-size:1rem;font-weight:600;color:#334155;margin-bottom:1rem;" id="form-title-{{ slug }}">
+      Adicionar {{ label }}
+    </div>
+    <form method="post" id="form-{{ slug }}">
+      {% csrf_token %}
+      <input type="hidden" name="acao" value="salvar">
+      <input type="hidden" name="pk" id="pk-{{ slug }}" value="">
+      <div class="field">
+        <label>Nome *</label>
+        <input type="text" name="nome" id="nome-{{ slug }}" placeholder="Nome..." required>
+      </div>
+      <div style="display:flex;gap:.75rem;">
+        <button type="submit" class="btn btn-primary">Salvar</button>
+        <button type="button" onclick="resetForm('{{ slug }}', '{{ label }}')" class="btn btn-secondary">Limpar</button>
+      </div>
+    </form>
+  </div>
+
+</div>
+{% endfor %}
+
+<script>
+function editItem(slug, pk, nome) {
+  document.getElementById('pk-' + slug).value = pk;
+  document.getElementById('nome-' + slug).value = nome;
+  document.getElementById('form-title-' + slug).textContent = 'Editar';
+  document.getElementById('nome-' + slug).focus();
+}
+function resetForm(slug, label) {
+  document.getElementById('pk-' + slug).value = '';
+  document.getElementById('nome-' + slug).value = '';
+  document.getElementById('form-title-' + slug).textContent = 'Adicionar ' + label;
+}
+
+// Modal de confirmação inline
+const modal = document.createElement('div');
+modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;align-items:center;justify-content:center;';
+modal.innerHTML = `<div style="background:white;border-radius:10px;padding:1.75rem 2rem;max-width:380px;width:90%;box-shadow:0 8px 32px rgba(0,0,0,.2);">
+  <p id="modal-msg" style="margin-bottom:1.25rem;color:#334155;font-size:.95rem;"></p>
+  <div style="display:flex;gap:.75rem;">
+    <button id="modal-confirm" class="btn btn-danger">Sim, excluir</button>
+    <button id="modal-cancel" class="btn btn-secondary">Cancelar</button>
+  </div>
+</div>`;
+document.body.appendChild(modal);
+
+let pendingForm = null;
+document.getElementById('modal-cancel').onclick = () => { modal.style.display = 'none'; pendingForm = null; };
+document.getElementById('modal-confirm').onclick = () => { if (pendingForm) pendingForm.submit(); };
+
+function confirmDelete(btn) {
+  pendingForm = btn.closest('.item-row').querySelector('.delete-form');
+  document.getElementById('modal-msg').textContent = 'Excluir "' + btn.dataset.nome + '"? Esta ação não pode ser desfeita.';
+  modal.style.display = 'flex';
+}
+</script>
+{% endblock %}

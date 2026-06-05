@@ -4,7 +4,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login</title>
+    <title>SGP - Login</title>
+    <link
+      rel="icon"
+      type="image/png"
+      href="{% static 'accounts/logo_pp.png' %}"
+    />
     <style>
       * {
         box-sizing: border-box;
@@ -12,7 +17,7 @@
         padding: 0;
       }
       body {
-        font-family: sans-serif;
+        font-family: 'Segoe UI', sans-serif;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -21,59 +26,124 @@
           no-repeat;
         padding: 1rem;
       }
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: rgba(10, 15, 30, 0.55);
+        z-index: 0;
+      }
       .card {
-        background: white;
-        padding: 2rem;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        position: relative;
+        z-index: 1;
+        background: rgba(255, 255, 255, 0.97);
+        padding: 2.2rem 2rem;
+        border-radius: 14px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
         width: 100%;
-        max-width: 360px;
+        max-width: 370px;
       }
-      h2 {
-        margin-bottom: 1.5rem;
+      .logo {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.8rem;
+      }
+      .tagline {
         text-align: center;
-        color: #333;
+        font-size: 0.78rem;
+        color: #6b7280;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 1.6rem;
       }
-      input {
-        width: 100%;
-        padding: 0.6rem 0.8rem;
+      .error-box {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        color: #dc2626;
+        font-size: 0.85rem;
+        padding: 0.6rem 0.9rem;
+        border-radius: 6px;
         margin-bottom: 1rem;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-        font-size: 1rem;
       }
-      button {
+      .field {
+        position: relative;
+        margin-bottom: 1rem;
+      }
+      .field input {
         width: 100%;
-        padding: 0.7rem;
-        background: #4f46e5;
+        padding: 0.65rem 0.9rem;
+        border: 1px solid #d1d5db;
+        border-radius: 7px;
+        font-size: 0.97rem;
+        transition:
+          border-color 0.2s,
+          box-shadow 0.2s;
+      }
+      .field input:focus {
+        outline: none;
+        border-color: #4f46e5;
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+      }
+      .toggle-pw {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: #9ca3af;
+        font-size: 1rem;
+        padding: 0;
+      }
+      button[type='submit'] {
+        width: 100%;
+        padding: 0.75rem;
+        background: linear-gradient(135deg, #4f46e5, #7c3aed);
         color: white;
         border: none;
-        border-radius: 4px;
+        border-radius: 7px;
         font-size: 1rem;
+        font-weight: 600;
         cursor: pointer;
+        transition: opacity 0.2s;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
       }
-      button:hover {
-        background: #4338ca;
+      button[type='submit']:hover {
+        opacity: 0.9;
       }
-      .error {
-        color: #dc2626;
-        font-size: 0.875rem;
-        margin-bottom: 1rem;
+      button[type='submit']:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
       }
-      .brand {
+      .spinner {
+        display: none;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.4);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .forgot {
+        display: block;
         text-align: center;
-        margin-bottom: 1.2rem;
-        font-family: 'Georgia', serif;
-        font-size: 1.6rem;
-        letter-spacing: 1px;
-      }
-      .brand .gestao {
-        color: #cc0000;
-        font-weight: bold;
-      }
-      .brand .patrimonial {
+        margin-top: 1rem;
         color: #6b7280;
-        font-weight: normal;
+        font-size: 0.83rem;
+        text-decoration: none;
+      }
+      .forgot:hover {
+        color: #4f46e5;
+        text-decoration: underline;
       }
     </style>
   </head>
@@ -81,25 +151,63 @@
     <div class="card" style="background-color: #a1a1a1">
       <img
         src="{% static 'accounts/logo_pp.png' %}"
-        alt="Logo"
-        style="display: block; width: 100%; margin-bottom: 1.5rem"
+        alt="Logo SGP"
+        class="logo"
       />
+      <p class="tagline">Sistema de Gestão Picos Pĺast</p>
       {% if error %}
-      <p class="error">{{ error }}</p>
+      <div class="error-box">{{ error }}</div>
       {% endif %}
-      <form method="post">
+      <form method="post" id="loginForm">
         {% csrf_token %}
-        <input
-          type="text"
-          name="username"
-          placeholder="Usuário"
-          required
-          autofocus
-        />
-        <input type="password" name="password" placeholder="Senha" required />
-        <button type="submit">Entrar</button>
+        <div class="field">
+          <input
+            type="text"
+            name="username"
+            placeholder="Usuário"
+            required
+            autofocus
+          />
+        </div>
+        <div class="field">
+          <input
+            type="password"
+            name="password"
+            id="pwField"
+            placeholder="Senha"
+            required
+          />
+          <button
+            type="button"
+            class="toggle-pw"
+            onclick="togglePw()"
+            title="Mostrar/ocultar senha"
+          >
+            👁
+          </button>
+        </div>
+        <button type="submit" id="submitBtn">
+          <span id="btnText">Entrar</span>
+          <span class="spinner" id="spinner"></span>
+        </button>
       </form>
-      <a href="{% url 'password_reset' %}" style="display:block;text-align:center;margin-top:1rem;color:#6b7280;font-size:.85rem;text-decoration:none;">Esqueci minha senha</a>
+      <a href="{% url 'password_reset' %}" class="forgot"
+        >Esqueci minha senha</a
+      >
     </div>
+    <script>
+      function togglePw() {
+        const f = document.getElementById('pwField');
+        f.type = f.type === 'password' ? 'text' : 'password';
+      }
+      document
+        .getElementById('loginForm')
+        .addEventListener('submit', function () {
+          const btn = document.getElementById('submitBtn');
+          document.getElementById('btnText').textContent = 'Entrando…';
+          document.getElementById('spinner').style.display = 'block';
+          btn.disabled = true;
+        });
+    </script>
   </body>
 </html>

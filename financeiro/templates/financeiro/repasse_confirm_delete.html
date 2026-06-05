@@ -1,0 +1,18 @@
+{% extends "assets/base.html" %}
+{% block title %}Excluir Repasse{% endblock %}
+{% block content %}
+<div style="background:white;padding:2rem;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);max-width:480px;margin:0 auto;">
+  <h1 style="font-size:1.2rem;font-weight:700;margin-bottom:1rem;">Confirmar Exclusão</h1>
+  <p style="margin-bottom:1.5rem;color:#475569;">
+    Tem certeza que deseja excluir o repasse de
+    <strong>{{ repasse.origem }} → {{ repasse.destino }}</strong>
+    no valor de <strong>R$ {{ repasse.valor }}</strong>?
+    Esta ação não pode ser desfeita.
+  </p>
+  <form method="post" style="display:flex;gap:.75rem;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Sim, excluir</button>
+    <a href="{% url 'repasse_list' %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,157 @@
+{% extends "assets/base.html" %}
+{% load fin_filters %}
+{% block title %}Dashboard Financeiro{% endblock %}
+
+{% block extra_styles %}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-bottom:2rem;}
+.kpi{background:white;border-radius:10px;padding:1.4rem 1.5rem;box-shadow:0 1px 6px rgba(0,0,0,.08);
+  display:flex;align-items:center;gap:1rem;border-left:4px solid #4f46e5;}
+.kpi.green{border-color:#10b981;}
+.kpi.red{border-color:#ef4444;}
+.kpi.amber{border-color:#f59e0b;}
+.kpi-icon{font-size:1.8rem;line-height:1;}
+.kpi-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:.2rem;}
+.kpi-value{font-size:1.35rem;font-weight:700;color:#1e293b;line-height:1.2;font-family:monospace;}
+.kpi-sub{font-size:.75rem;color:#94a3b8;margin-top:.15rem;}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem;}
+@media(max-width:640px){.charts-grid{grid-template-columns:1fr;}}
+.chart-card{background:white;border-radius:10px;padding:1.25rem 1.5rem;box-shadow:0 1px 6px rgba(0,0,0,.08);}
+.section-title{font-size:1rem;font-weight:600;color:#334155;margin-bottom:.75rem;}
+.bar-row{display:flex;align-items:center;gap:.75rem;margin-bottom:.6rem;}
+.bar-label{font-size:.82rem;color:#334155;min-width:120px;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar-track{flex:1;height:18px;background:#f1f5f9;border-radius:999px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#4f46e5,#7c3aed);min-width:4px;}
+.bar-val{font-size:.8rem;font-family:monospace;color:#64748b;white-space:nowrap;}
+.data-table-wrap{background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);overflow:hidden;}
+.data-table{width:100%;border-collapse:collapse;}
+.data-table thead tr{background:linear-gradient(135deg,#1e1b4b,#4f46e5);}
+.data-table th{padding:.65rem 1rem;text-align:left;color:white;font-size:.82rem;font-weight:600;letter-spacing:.03em;}
+.data-table td{padding:.65rem 1rem;border-bottom:1px solid #f1f5f9;font-size:.88rem;color:#334155;}
+.data-table tbody tr:last-child td{border-bottom:none;}
+.data-table tbody tr:hover td{background:#f8fafc;}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:999px;font-size:.75rem;font-weight:600;}
+.badge-blue{background:#ede9fe;color:#4f46e5;}
+.badge-red{background:#fee2e2;color:#dc2626;}
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+  <div>
+    <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;">📊 Dashboard Financeiro</h1>
+    <span style="font-size:.82rem;color:#94a3b8;">{{ mes_label }}</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:.75rem;">
+    <form method="get" style="display:flex;align-items:center;gap:.5rem;">
+      <input type="month" name="mes" value="{{ mes_val }}"
+        style="padding:.45rem .75rem;border:1px solid #e2e8f0;border-radius:6px;font-size:.85rem;">
+      <button type="submit" class="btn btn-outline" style="padding:.45rem .9rem;">Filtrar</button>
+    </form>
+    <a href="{% url 'repasse_create' %}" class="btn btn-outline">+ Novo Repasse</a>
+    <a href="{% url 'despesa_create' %}" class="btn btn-primary">+ Nova Despesa</a>
+  </div>
+</div>
+
+<!-- KPIs -->
+<div class="kpi-grid">
+  <div class="kpi green">
+    <div class="kpi-icon">⬆️</div>
+    <div>
+      <div class="kpi-label">Aportes do Mês</div>
+      <div class="kpi-value">{{ total_aportes|brl }}</div>
+      <div class="kpi-sub">entradas no período</div>
+    </div>
+  </div>
+  <div class="kpi amber">
+    <div class="kpi-icon">🔄</div>
+    <div>
+      <div class="kpi-label">Repasses do Mês</div>
+      <div class="kpi-value">{{ total_repasses|brl }}</div>
+      <div class="kpi-sub">transferências internas</div>
+    </div>
+  </div>
+  <div class="kpi red">
+    <div class="kpi-icon">💸</div>
+    <div>
+      <div class="kpi-label">Despesas do Mês</div>
+      <div class="kpi-value">{{ total_despesas|brl }}</div>
+      <div class="kpi-sub">saídas no período</div>
+    </div>
+  </div>
+  <div class="kpi {% if saldo >= 0 %}green{% else %}red{% endif %}">
+    <div class="kpi-icon">{% if saldo >= 0 %}✅{% else %}⚠️{% endif %}</div>
+    <div>
+      <div class="kpi-label">Saldo no Financeiro</div>
+      <div class="kpi-value">{{ saldo|brl }}</div>
+      <div class="kpi-sub">aportes − repasses − despesas</div>
+    </div>
+  </div>
+</div>
+
+<!-- Gráficos -->
+<div class="charts-grid">
+  <div class="chart-card">
+    <div class="section-title">💸 Despesas por Centro de Custo</div>
+    {% if por_centro %}
+      {% with max_val=por_centro.0.total %}
+      {% for row in por_centro %}
+        <div class="bar-row">
+          <div class="bar-label" title="{{ row.centro_custo }}">{{ row.centro_custo }}</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:{% widthratio row.total max_val 100 %}%"></div>
+          </div>
+          <div class="bar-val">R$ {{ row.total }}</div>
+        </div>
+      {% endfor %}
+      {% endwith %}
+    {% else %}
+      <p style="color:#94a3b8;font-size:.88rem;padding:.5rem 0;">Sem despesas neste mês.</p>
+    {% endif %}
+  </div>
+
+  <div class="chart-card">
+    <div class="section-title">🗂️ Despesas por SubGrupo</div>
+    {% if por_subgrupo %}
+      {% with max_val=por_subgrupo.0.total %}
+      {% for row in por_subgrupo %}
+        <div class="bar-row">
+          <div class="bar-label" title="{{ row.subgrupo }}">{{ row.subgrupo }}</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:{% widthratio row.total max_val 100 %}%"></div>
+          </div>
+          <div class="bar-val">R$ {{ row.total }}</div>
+        </div>
+      {% endfor %}
+      {% endwith %}
+    {% else %}
+      <p style="color:#94a3b8;font-size:.88rem;padding:.5rem 0;">Sem despesas neste mês.</p>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Últimas movimentações -->
+<div class="section-title">🕐 Últimas 10 Movimentações</div>
+<div class="data-table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Tipo</th>
+        <th>Descrição</th>
+        <th>Valor</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for m in ultimas %}
+      <tr>
+        <td>{{ m.data|date:"d/m/Y" }}</td>
+        <td><span class="badge badge-{{ m.badge }}">{{ m.tipo }}</span></td>
+        <td>{{ m.descricao }}</td>
+        <td style="font-family:monospace;white-space:nowrap;">{{ m.valor|brl }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="4" style="color:#94a3b8;text-align:center;padding:1.5rem;">Nenhuma movimentação registrada.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

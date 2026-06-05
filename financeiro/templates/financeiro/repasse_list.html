@@ -1,0 +1,72 @@
+{% extends "assets/base.html" %}
+{% load fin_filters %}
+{% block title %}Repasses{% endblock %}
+{% block extra_styles %}
+.filter-bar{background:white;padding:1rem 1.25rem;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);display:flex;flex-wrap:wrap;gap:.75rem;align-items:flex-end;margin-bottom:1.5rem;}
+.filter-field{display:flex;flex-direction:column;gap:.25rem;}
+.filter-field label{font-size:.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;}
+.filter-field input{padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:6px;font-size:.88rem;}
+.filter-field input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.data-table-wrap{overflow-x:auto;background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);}
+.data-table{width:100%;border-collapse:collapse;min-width:600px;}
+.data-table thead tr{background:linear-gradient(135deg,#1e1b4b,#4f46e5);}
+.data-table th{padding:.75rem 1rem;text-align:left;color:white;font-size:.82rem;font-weight:600;letter-spacing:.03em;}
+.data-table td{padding:.75rem 1rem;border-bottom:1px solid #f1f5f9;font-size:.88rem;color:#334155;}
+.data-table tbody tr:last-child td{border-bottom:none;}
+.data-table tbody tr:hover td{background:#f8fafc;}
+.badge{display:inline-block;padding:.2rem .65rem;border-radius:999px;font-size:.75rem;font-weight:600;}
+.badge-aporte{background:#d1fae5;color:#065f46;}
+.badge-repasse{background:#e0e7ff;color:#3730a3;}
+.pagination{display:flex;gap:.4rem;margin-top:1.25rem;align-items:center;}
+.pagination a,.pagination span{padding:.4rem .75rem;border-radius:6px;font-size:.85rem;text-decoration:none;}
+.pagination a{background:white;color:#4f46e5;border:1px solid #c7d2fe;}
+.pagination a:hover{background:#f5f3ff;}
+.pagination .current{background:#4f46e5;color:white;border:1px solid #4f46e5;}
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;">🔄 Repasses</h1>
+  <a href="{% url 'repasse_create' %}" class="btn btn-primary">+ Novo Repasse</a>
+</div>
+<form method="get" class="filter-bar">
+  <div class="filter-field"><label>Filtrar por mês</label><input type="month" name="mes" value="{{ mes }}"></div>
+  <button type="submit" class="btn btn-primary">Filtrar</button>
+  <a href="{% url 'repasse_list' %}" class="btn btn-outline">Limpar</a>
+</form>
+{% if page_obj.object_list %}
+<div class="data-table-wrap">
+  <table class="data-table">
+    <thead><tr><th>Data</th><th>Tipo</th><th>Origem</th><th>Destino</th><th>Valor</th><th>Descrição</th><th></th></tr></thead>
+    <tbody>
+    {% for r in page_obj %}
+    <tr>
+      <td>{{ r.data|date:"d/m/Y" }}</td>
+      <td><span class="badge badge-{{ r.tipo }}">{{ r.get_tipo_display }}</span></td>
+      <td>{{ r.origem }}</td>
+      <td>{{ r.destino }}</td>
+      <td style="font-family:monospace;white-space:nowrap;">{{ r.valor|brl }}</td>
+      <td style="color:#64748b;">{{ r.descricao|truncatechars:40 }}</td>
+      <td style="white-space:nowrap;">
+        <a href="{% url 'repasse_edit' r.pk %}" class="btn btn-secondary" style="padding:.35rem .75rem;font-size:.82rem;">Editar</a>
+        <a href="{% url 'repasse_delete' r.pk %}" class="btn btn-danger" style="padding:.35rem .75rem;font-size:.82rem;">Excluir</a>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page_obj.has_other_pages %}
+<div class="pagination">
+  {% if page_obj.has_previous %}<a href="?mes={{ mes }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>{% endif %}
+  <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+  {% if page_obj.has_next %}<a href="?mes={{ mes }}&page={{ page_obj.next_page_number }}">Próxima ›</a>{% endif %}
+</div>
+{% endif %}
+{% else %}
+<div class="card" style="text-align:center;padding:3rem 1rem;color:#94a3b8;">
+  <div style="font-size:2.5rem;margin-bottom:1rem;">📭</div>
+  <p style="margin-bottom:.75rem;">Nenhum repasse encontrado.</p>
+  <a href="{% url 'repasse_create' %}" class="btn btn-primary">Cadastrar repasse</a>
+</div>
+{% endif %}
+{% endblock %}

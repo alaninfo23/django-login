@@ -16,6 +16,11 @@ def _owned_or_404(pk, user):
 
 
 @login_required
+def home(request):
+    return render(request, 'assets/home.html')
+
+
+@login_required
 def asset_list(request):
     qs = Asset.objects.filter(user=request.user)
 

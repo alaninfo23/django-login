@@ -1,0 +1,22 @@
+{% extends "assets/base.html" %}
+{% block title %}Configurar Empresa{% endblock %}
+{% block content %}
+<div style="background:white;padding:2.5rem 2rem;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);max-width:480px;margin:2rem auto;text-align:center;">
+  <div style="font-size:2.5rem;margin-bottom:1rem;">🏢</div>
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;margin-bottom:.5rem;">Bem-vindo ao SGP</h1>
+  <p style="color:#64748b;font-size:.9rem;margin-bottom:2rem;">Você ainda não está associado a nenhuma empresa. Crie a sua agora para começar.</p>
+  <form method="post" style="text-align:left;">
+    {% csrf_token %}
+    <input type="hidden" name="acao" value="criar">
+    <div style="margin-bottom:1.25rem;">
+      <label style="display:block;font-size:.875rem;font-weight:600;margin-bottom:.35rem;color:#334155;">Nome da Empresa *</label>
+      <input type="text" name="nome" placeholder="Ex: Grupo Picos Plast"
+        style="width:100%;padding:.65rem .9rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.97rem;"
+        required autofocus>
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;padding:.7rem;">
+      Criar Empresa e Começar
+    </button>
+  </form>
+</div>
+{% endblock %}

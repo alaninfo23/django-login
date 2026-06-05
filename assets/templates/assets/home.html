@@ -1,0 +1,9 @@
+{% extends "assets/base.html" %}
+{% block title %}Início{% endblock %}
+{% block content %}
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;gap:1rem;">
+  <img src="" alt="" style="width:80px;opacity:.15;">
+  <h2 style="font-size:1.5rem;font-weight:700;color:#1e293b;">Bem-vindo, {{ user.username }}!</h2>
+  <p style="color:#64748b;font-size:.95rem;">Selecione um módulo no menu acima para começar.</p>
+</div>
+{% endblock %}

@@ -44,8 +44,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'empresa',
     'accounts',
     'assets',
+    'financeiro',
 ]
 
 MIDDLEWARE = [
@@ -56,6 +58,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'empresa.middleware.EmpresaMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -96,7 +99,7 @@ if DATABASE_URL:
     }
 
 LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/assets/'
+LOGIN_REDIRECT_URL = '/assets/home/'
 LOGOUT_REDIRECT_URL = '/login/'
 
 STATIC_URL = '/static/'
@@ -109,9 +112,9 @@ EMAIL_BACKEND = os.environ.get(
     'EMAIL_BACKEND',
     'django.core.mail.backends.console.EmailBackend'
 )
-EMAIL_HOST = 'smtp.office365.com'
+EMAIL_HOST = 'smtp-relay.brevo.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER or 'noreply@gestapatrimonial.com'
+DEFAULT_FROM_EMAIL = 'Gestão Patrimonial <alaninfo23@gmail.com>'

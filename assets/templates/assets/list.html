@@ -1,114 +1,147 @@
 {% extends "assets/base.html" %}
 {% load asset_filters %}
 {% block title %}Meus Bens{% endblock %}
+
+{% block extra_styles %}
+.filter-bar{background:white;padding:1rem 1.25rem;border-radius:10px;
+  box-shadow:0 1px 6px rgba(0,0,0,.08);display:flex;flex-wrap:wrap;gap:.75rem;
+  align-items:flex-end;margin-bottom:1.5rem;}
+.filter-field{display:flex;flex-direction:column;gap:.25rem;}
+.filter-field label{font-size:.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;}
+.filter-field input,.filter-field select{padding:.5rem .75rem;border:1px solid #e2e8f0;
+  border-radius:6px;font-size:.88rem;color:#334155;background:white;min-width:140px;}
+.filter-field input:focus,.filter-field select:focus{outline:none;border-color:#4f46e5;
+  box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.data-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;
+  background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);}
+.data-table{width:100%;border-collapse:collapse;min-width:600px;}
+.data-table thead tr{background:linear-gradient(135deg,#1e1b4b,#4f46e5);}
+.data-table th{padding:.75rem 1rem;text-align:left;color:white;font-size:.82rem;font-weight:600;letter-spacing:.03em;}
+.data-table td{padding:.75rem 1rem;border-bottom:1px solid #f1f5f9;font-size:.88rem;color:#334155;}
+.data-table tbody tr:last-child td{border-bottom:none;}
+.data-table tbody tr:hover td{background:#f8fafc;}
+.badge{display:inline-block;padding:.2rem .65rem;border-radius:999px;font-size:.75rem;font-weight:600;}
+.badge-active{background:#d1fae5;color:#065f46;}
+.badge-inactive{background:#fee2e2;color:#991b1b;}
+.badge-default{background:#e0e7ff;color:#3730a3;}
+/* mobile cards */
+.asset-cards{display:none;}
+@media(max-width:640px){
+  .data-table-wrap{display:none;}
+  .asset-cards{display:block;}
+  .asset-card{background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);
+    padding:1rem 1.1rem;margin-bottom:.9rem;border-left:4px solid #4f46e5;}
+  .asset-card .card-title{font-weight:700;font-size:.97rem;margin-bottom:.6rem;color:#1e293b;}
+  .asset-card .card-row{display:flex;justify-content:space-between;font-size:.85rem;
+    padding:.25rem 0;border-bottom:1px solid #f1f5f9;color:#475569;}
+  .asset-card .card-row span:first-child{color:#94a3b8;font-size:.8rem;}
+  .asset-card .card-actions{margin-top:.75rem;display:flex;gap:.5rem;}
+}
+{% endblock %}
+
 {% block content %}
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
-    <h1>Meus Bens</h1>
-    <a href="{% url 'asset_create' %}" class="btn btn-primary">+ Novo Bem</a>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;">📦 Meus Bens</h1>
+  <a href="{% url 'asset_create' %}" class="btn btn-primary">+ Novo Bem</a>
 </div>
 
-<form method="get" style="background:white; padding:1rem; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.08); display:flex; flex-wrap:wrap; gap:.75rem; margin-bottom:1.5rem; align-items:flex-end;">
-    <div>
-        <label style="display:block; font-size:.8rem; font-weight:600; margin-bottom:.2rem;">Busca</label>
-        <input type="text" name="q" value="{{ filters.q }}" placeholder="Nome do bem" style="padding:.5rem .7rem; border:1px solid #d1d5db; border-radius:4px;">
-    </div>
-    <div>
-        <label style="display:block; font-size:.8rem; font-weight:600; margin-bottom:.2rem;">Tipo</label>
-        <select name="asset_type" style="padding:.5rem .7rem; border:1px solid #d1d5db; border-radius:4px;">
-            <option value="">Todos</option>
-            {% for val, label in asset_types.choices %}
-            <option value="{{ val }}" {% if filters.asset_type == val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div>
-        <label style="display:block; font-size:.8rem; font-weight:600; margin-bottom:.2rem;">Status</label>
-        <select name="status" style="padding:.5rem .7rem; border:1px solid #d1d5db; border-radius:4px;">
-            <option value="">Todos</option>
-            {% for val, label in statuses.choices %}
-            <option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-    </div>
-    <div>
-        <label style="display:block; font-size:.8rem; font-weight:600; margin-bottom:.2rem;">Ordenar por</label>
-        <select name="order" style="padding:.5rem .7rem; border:1px solid #d1d5db; border-radius:4px;">
-            <option value="-created_at"    {% if filters.order == '-created_at'    %}selected{% endif %}>Mais recentes</option>
-            <option value="created_at"     {% if filters.order == 'created_at'     %}selected{% endif %}>Mais antigos</option>
-            <option value="acquisition_value"  {% if filters.order == 'acquisition_value'  %}selected{% endif %}>Valor ↑</option>
-            <option value="-acquisition_value" {% if filters.order == '-acquisition_value' %}selected{% endif %}>Valor ↓</option>
-            <option value="purchase_date"  {% if filters.order == 'purchase_date'  %}selected{% endif %}>Data compra ↑</option>
-            <option value="-purchase_date" {% if filters.order == '-purchase_date' %}selected{% endif %}>Data compra ↓</option>
-        </select>
-    </div>
-    <button type="submit" class="btn btn-primary">Filtrar</button>
-    <a href="{% url 'asset_list' %}" class="btn btn-secondary">Limpar</a>
+<!-- Filtros -->
+<form method="get" class="filter-bar">
+  <div class="filter-field">
+    <label>Busca</label>
+    <input type="text" name="q" value="{{ filters.q }}" placeholder="Nome do bem">
+  </div>
+  <div class="filter-field">
+    <label>Tipo</label>
+    <select name="asset_type">
+      <option value="">Todos</option>
+      {% for val,label in asset_types.choices %}
+      <option value="{{ val }}" {% if filters.asset_type == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-field">
+    <label>Status</label>
+    <select name="status">
+      <option value="">Todos</option>
+      {% for val,label in statuses.choices %}
+      <option value="{{ val }}" {% if filters.status == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-field">
+    <label>Ordenar</label>
+    <select name="order">
+      <option value="-created_at"    {% if filters.order == '-created_at'    %}selected{% endif %}>Mais recentes</option>
+      <option value="created_at"     {% if filters.order == 'created_at'     %}selected{% endif %}>Mais antigos</option>
+      <option value="acquisition_value"  {% if filters.order == 'acquisition_value'  %}selected{% endif %}>Valor ↑</option>
+      <option value="-acquisition_value" {% if filters.order == '-acquisition_value' %}selected{% endif %}>Valor ↓</option>
+      <option value="purchase_date"  {% if filters.order == 'purchase_date'  %}selected{% endif %}>Data compra ↑</option>
+      <option value="-purchase_date" {% if filters.order == '-purchase_date' %}selected{% endif %}>Data compra ↓</option>
+    </select>
+  </div>
+  <button type="submit" class="btn btn-primary">Filtrar</button>
+  <a href="{% url 'asset_list' %}" class="btn btn-outline">Limpar</a>
 </form>
 
 {% if assets %}
-<style>
-    .asset-cards { display: none; }
-    @media(max-width:640px) {
-        .asset-table-wrap { display: none; }
-        .asset-cards { display: block; }
-        .asset-card { background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); padding: 1rem; margin-bottom: 1rem; }
-        .asset-card .card-title { font-weight: 700; font-size: 1rem; margin-bottom: .5rem; color: #111; }
-        .asset-card .card-row { display: flex; justify-content: space-between; font-size: .875rem; padding: .2rem 0; border-bottom: 1px solid #f3f4f6; color: #444; }
-        .asset-card .card-row span:first-child { color: #6b7280; }
-        .asset-card .card-actions { margin-top: .75rem; display: flex; gap: .5rem; }
-    }
-</style>
-
-<!-- Tabela (desktop) -->
-<div class="asset-table-wrap" style="overflow-x:auto; -webkit-overflow-scrolling:touch;">
-<table style="width:100%; border-collapse:collapse; background:white; border-radius:8px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.1); min-width:600px;">
-    <thead style="background:#4f46e5; color:white;">
-        <tr>
-            <th style="padding:.75rem 1rem; text-align:left;">Nome</th>
-            <th style="padding:.75rem 1rem; text-align:left;">Tipo</th>
-            <th style="padding:.75rem 1rem; text-align:left; min-width:120px;">Valor</th>
-            <th style="padding:.75rem 1rem; text-align:left;">Data Compra</th>
-            <th style="padding:.75rem 1rem; text-align:left;">Status</th>
-            <th style="padding:.75rem 1rem; white-space:nowrap; min-width:130px;"></th>
-        </tr>
+<!-- Desktop table -->
+<div class="data-table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Nome</th>
+        <th>Tipo</th>
+        <th>Valor</th>
+        <th>Data Compra</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
     </thead>
     <tbody>
     {% for asset in assets %}
-        <tr style="border-bottom:1px solid #e5e7eb;">
-            <td style="padding:.75rem 1rem;">{{ asset.name }}</td>
-            <td style="padding:.75rem 1rem; max-width:140px;">{{ asset.get_asset_type_display }}</td>
-            <td style="padding:.75rem 1rem; white-space:nowrap;">R$ {{ asset.acquisition_value|brl }}</td>
-            <td style="padding:.75rem 1rem;">{{ asset.purchase_date|date:"d/m/Y"|default:"—" }}</td>
-            <td style="padding:.75rem 1rem;">{{ asset.get_status_display }}</td>
-            <td style="padding:.75rem 1rem; white-space:nowrap;">
-                <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-secondary" style="margin-right:.3rem;">Editar</a>
-                <a href="{% url 'asset_delete' asset.pk %}" class="btn btn-danger">Deletar</a>
-            </td>
-        </tr>
+      <tr>
+        <td style="font-weight:600;">{{ asset.name }}</td>
+        <td>{{ asset.get_asset_type_display }}</td>
+        <td style="white-space:nowrap;font-family:monospace;">R$ {{ asset.acquisition_value|brl }}</td>
+        <td>{{ asset.purchase_date|date:"d/m/Y"|default:"—" }}</td>
+        <td><span class="badge badge-default">{{ asset.get_status_display }}</span></td>
+        <td style="white-space:nowrap;">
+          <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-secondary" style="padding:.35rem .75rem;font-size:.82rem;">Editar</a>
+          <a href="{% url 'asset_delete' asset.pk %}" class="btn btn-danger" style="padding:.35rem .75rem;font-size:.82rem;">Deletar</a>
+        </td>
+      </tr>
     {% endfor %}
     </tbody>
-</table>
+  </table>
 </div>
 
-<!-- Cards (mobile) -->
+<!-- Mobile cards -->
 <div class="asset-cards">
 {% for asset in assets %}
-    <div class="asset-card">
-        <div class="card-title">{{ asset.name }}</div>
-        <div class="card-row"><span>Tipo</span><span>{{ asset.get_asset_type_display }}</span></div>
-        <div class="card-row"><span>Valor</span><span>R$ {{ asset.acquisition_value|brl }}</span></div>
-        <div class="card-row"><span>Data Compra</span><span>{{ asset.purchase_date|date:"d/m/Y"|default:"—" }}</span></div>
-        <div class="card-row"><span>Status</span><span>{{ asset.get_status_display }}</span></div>
-        <div class="card-row"><span>Localização</span><span>{{ asset.location|default:"—" }}</span></div>
-        <div class="card-actions">
-            <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-secondary">Editar</a>
-            <a href="{% url 'asset_delete' asset.pk %}" class="btn btn-danger">Deletar</a>
-        </div>
+  <div class="asset-card">
+    <div class="card-title">{{ asset.name }}</div>
+    <div class="card-row"><span>Tipo</span><span>{{ asset.get_asset_type_display }}</span></div>
+    <div class="card-row"><span>Valor</span><span>R$ {{ asset.acquisition_value|brl }}</span></div>
+    <div class="card-row"><span>Data Compra</span><span>{{ asset.purchase_date|date:"d/m/Y"|default:"—" }}</span></div>
+    <div class="card-row"><span>Status</span><span>{{ asset.get_status_display }}</span></div>
+    <div class="card-row"><span>Localização</span><span>{{ asset.location|default:"—" }}</span></div>
+    <div class="card-actions">
+      <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-secondary">Editar</a>
+      <a href="{% url 'asset_delete' asset.pk %}" class="btn btn-danger">Deletar</a>
     </div>
+  </div>
 {% endfor %}
 </div>
 
 {% else %}
-<p style="color:#6b7280;">Nenhum bem encontrado. <a href="{% url 'asset_list' %}">Limpar filtros</a> ou <a href="{% url 'asset_create' %}">cadastrar novo</a>.</p>
+<div class="card" style="text-align:center;padding:3rem 1rem;color:#94a3b8;">
+  <div style="font-size:2.5rem;margin-bottom:1rem;">📭</div>
+  <p style="margin-bottom:.75rem;">Nenhum bem encontrado.</p>
+  <div style="display:flex;gap:.75rem;justify-content:center;">
+    <a href="{% url 'asset_list' %}" class="btn btn-outline">Limpar filtros</a>
+    <a href="{% url 'asset_create' %}" class="btn btn-primary">Cadastrar novo</a>
+  </div>
+</div>
 {% endif %}
 {% endblock %}
