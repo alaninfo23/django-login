@@ -113,7 +113,7 @@ class Motorista(models.Model):
 
     empresa        = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='motoristas')
     nome           = models.CharField(max_length=200)
-    cpf            = models.CharField(max_length=14, blank=True)
+    cpf            = models.CharField(max_length=14, blank=True, null=True, default=None)
     telefone       = models.CharField(max_length=20, blank=True)
     cnh_numero     = models.CharField(max_length=20, blank=True, verbose_name='Número CNH')
     cnh_categoria  = models.CharField(max_length=2, choices=CategoriaCNH.choices, blank=True, verbose_name='Categoria CNH')

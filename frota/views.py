@@ -193,8 +193,53 @@ def veiculo_delete(request, pk):
 @login_required
 @requer_empresa
 def veiculo_detalhe(request, pk):
+    from datetime import date
+    from django.db.models import Sum
+
     veiculo = _veiculo_da_empresa(pk, request.empresa)
-    return render(request, 'frota/veiculo_detalhe.html', {'veiculo': veiculo})
+
+    abastecimentos = veiculo.abastecimentos.order_by('-data', '-criado_em')[:10]
+    manutencoes    = veiculo.manutencoes.order_by('-data', '-criado_em')[:10]
+    viagens        = veiculo.viagens.select_related('motorista').order_by('-saida')[:10]
+
+    totais = veiculo.abastecimentos.aggregate(
+        gasto_combustivel=Sum('valor_total'),
+        total_abastecimentos=models.Count('id'),
+    )
+    totais['gasto_manutencao'] = veiculo.manutencoes.filter(
+        valor__isnull=False
+    ).aggregate(v=Sum('valor'))['v']
+    totais['total_viagens'] = veiculo.viagens.count()
+
+    km_rodado_total = sum(
+        (v.km_final - v.km_inicial)
+        for v in veiculo.viagens.filter(km_final__isnull=False)
+        if v.km_final and v.km_final > v.km_inicial
+    )
+
+    total_litros = veiculo.abastecimentos.aggregate(t=Sum('litros'))['t']
+    consumo_medio = (
+        round(km_rodado_total / float(total_litros), 2)
+        if total_litros and km_rodado_total else None
+    )
+
+    ultima_man = veiculo.manutencoes.filter(
+        proxima_revisao__isnull=False
+    ).order_by('-data').first()
+    proxima_revisao = ultima_man.proxima_revisao if ultima_man else None
+    revisao_vencida = proxima_revisao and proxima_revisao < date.today()
+
+    return render(request, 'frota/veiculo_detalhe.html', {
+        'veiculo':         veiculo,
+        'abastecimentos':  abastecimentos,
+        'manutencoes':     manutencoes,
+        'viagens':         viagens,
+        'totais':          totais,
+        'km_rodado_total': km_rodado_total or None,
+        'consumo_medio':   consumo_medio,
+        'proxima_revisao': proxima_revisao,
+        'revisao_vencida': revisao_vencida,
+    })
 
 
 # ── Abastecimentos ─────────────────────────────────────────────────────────────
@@ -478,6 +523,10 @@ def viagem_create(request):
             return render(request, 'frota/viagem_form.html', ctx)
         motorista_pk = request.POST.get('motorista') or None
         motorista = get_object_or_404(Motorista, pk=motorista_pk, empresa=request.empresa) if motorista_pk else None
+        if motorista and motorista.cnh_vencida:
+            messages.warning(request, f'Atenção: CNH de {motorista.nome} está vencida desde {motorista.cnh_validade:%d/%m/%Y}.')
+        elif motorista and motorista.cnh_vencendo:
+            messages.warning(request, f'Atenção: CNH de {motorista.nome} vence em {motorista.cnh_validade:%d/%m/%Y}.')
         v = Viagem.objects.create(
             veiculo=veiculo, motorista=motorista,
             origem=request.POST.get('origem', ''),
@@ -521,6 +570,10 @@ def viagem_edit(request, pk):
             ctx['post'] = request.POST
             return render(request, 'frota/viagem_form.html', ctx)
         viagem.motorista  = get_object_or_404(Motorista, pk=motorista_pk, empresa=request.empresa) if motorista_pk else None
+        if viagem.motorista and viagem.motorista.cnh_vencida:
+            messages.warning(request, f'Atenção: CNH de {viagem.motorista.nome} está vencida desde {viagem.motorista.cnh_validade:%d/%m/%Y}.')
+        elif viagem.motorista and viagem.motorista.cnh_vencendo:
+            messages.warning(request, f'Atenção: CNH de {viagem.motorista.nome} vence em {viagem.motorista.cnh_validade:%d/%m/%Y}.')
         viagem.origem     = request.POST.get('origem', '')
         viagem.destino    = request.POST.get('destino', '')
         viagem.saida      = request.POST.get('saida')
@@ -542,6 +595,28 @@ def viagem_edit(request, pk):
     return render(request, 'frota/viagem_form.html', {
         **_ctx_viagem(request.empresa), 'viagem': viagem,
     })
+
+
+@login_required
+@requer_empresa
+def viagem_encerrar(request, pk):
+    viagem = get_object_or_404(Viagem, pk=pk, veiculo__empresa=request.empresa,
+                               status=Viagem.Status.EM_ANDAMENTO)
+    if request.method == 'POST':
+        from datetime import datetime
+        km_final = request.POST.get('km_final') or None
+        if km_final and int(km_final) < viagem.km_inicial:
+            messages.error(request, 'KM final não pode ser menor que KM inicial.')
+            return render(request, 'frota/viagem_encerrar.html', {'viagem': viagem})
+        viagem.km_final = km_final
+        viagem.retorno  = request.POST.get('retorno') or None
+        viagem.status   = Viagem.Status.CONCLUIDA
+        viagem.save()
+        if km_final:
+            viagem.veiculo.atualizar_km(km_final)
+        messages.success(request, f'Viagem encerrada com sucesso.')
+        return redirect('frota_viagens')
+    return render(request, 'frota/viagem_encerrar.html', {'viagem': viagem})
 
 
 @login_required
@@ -594,21 +669,37 @@ def motorista_list(request):
 @requer_empresa
 def motorista_create(request):
     if request.method == 'POST':
-        Motorista.objects.create(
-            empresa=request.empresa,
-            nome=request.POST.get('nome', '').strip(),
-            cpf=request.POST.get('cpf', '').strip(),
-            telefone=request.POST.get('telefone', '').strip(),
-            cnh_numero=request.POST.get('cnh_numero', '').strip(),
-            cnh_categoria=request.POST.get('cnh_categoria', ''),
-            cnh_validade=request.POST.get('cnh_validade') or None,
-            status=request.POST.get('status', Motorista.Status.ATIVO),
-            observacoes=request.POST.get('observacoes', ''),
-        )
-        return redirect('frota_motoristas')
+        cpf = request.POST.get('cpf', '').strip()
+        # Dois motoristas sem CPF violariam o unique_together — usa None
+        cpf = cpf if cpf else None
+        from django.db import IntegrityError
+        try:
+            Motorista.objects.create(
+                empresa=request.empresa,
+                nome=request.POST.get('nome', '').strip(),
+                cpf=cpf,
+                telefone=request.POST.get('telefone', '').strip(),
+                cnh_numero=request.POST.get('cnh_numero', '').strip(),
+                cnh_categoria=request.POST.get('cnh_categoria', ''),
+                cnh_validade=request.POST.get('cnh_validade') or None,
+                status=request.POST.get('status', Motorista.Status.ATIVO),
+                observacoes=request.POST.get('observacoes', ''),
+            )
+            return redirect('frota_motoristas')
+        except IntegrityError:
+            messages.error(request, 'Já existe um motorista cadastrado com este CPF.')
+            return render(request, 'frota/motorista_form.html', {
+                'status_choices': Motorista.Status,
+                'categoria_choices': Motorista.CategoriaCNH,
+                'motorista': None,
+                'erros': {},
+                'post': request.POST,
+            })
     return render(request, 'frota/motorista_form.html', {
         'status_choices': Motorista.Status,
         'categoria_choices': Motorista.CategoriaCNH,
+        'motorista': None,
+        'erros': {},
     })
 
 
@@ -631,6 +722,7 @@ def motorista_edit(request, pk):
         'motorista': motorista,
         'status_choices': Motorista.Status,
         'categoria_choices': Motorista.CategoriaCNH,
+        'erros': {},
     })
 
 

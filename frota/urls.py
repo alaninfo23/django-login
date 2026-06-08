@@ -25,6 +25,7 @@ urlpatterns = [
     path('viagens/',                     views.viagem_list,               name='frota_viagens'),
     path('viagens/novo/',                views.viagem_create,             name='frota_viagem_create'),
     path('viagens/bulk-delete/',         views.viagens_bulk_delete,       name='frota_viagens_bulk_delete'),
+    path('viagens/<int:pk>/encerrar/',   views.viagem_encerrar,           name='frota_viagem_encerrar'),
     path('viagens/<int:pk>/editar/',     views.viagem_edit,               name='frota_viagem_edit'),
     path('viagens/<int:pk>/deletar/',    views.viagem_delete,             name='frota_viagem_delete'),
     # Motoristas

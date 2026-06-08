@@ -1,0 +1,40 @@
+{% extends "assets/base.html" %}
+{% block title %}Encerrar Viagem{% endblock %}
+{% block content %}
+<div style="max-width:480px;margin:2rem auto;">
+  <a href="{% url 'frota_viagens' %}" style="font-size:.85rem;color:#64748b;text-decoration:none;">← Voltar</a>
+  <div class="card" style="margin-top:1rem;padding:1.5rem;">
+    <h1 style="font-size:1.2rem;font-weight:700;color:#1e293b;margin-bottom:.25rem;">🏁 Encerrar Viagem</h1>
+    <p style="font-size:.88rem;color:#64748b;margin-bottom:1.25rem;">
+      {{ viagem.veiculo.placa }} — {{ viagem.origem }} → {{ viagem.destino }}<br>
+      Saída: {{ viagem.saida|date:"d/m/Y H:i" }} &nbsp;|&nbsp; KM inicial: {{ viagem.km_inicial }}
+    </p>
+
+    {% if messages %}
+      {% for msg in messages %}
+      <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:7px;padding:.65rem 1rem;margin-bottom:1rem;color:#991b1b;font-size:.88rem;">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div>
+          <label style="display:block;font-size:.8rem;font-weight:600;color:#475569;margin-bottom:.3rem;">KM Final</label>
+          <input type="number" name="km_final" min="{{ viagem.km_inicial }}" placeholder="Ex: {{ viagem.km_inicial|add:100 }}"
+                 style="width:100%;padding:.55rem .75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.9rem;">
+        </div>
+        <div>
+          <label style="display:block;font-size:.8rem;font-weight:600;color:#475569;margin-bottom:.3rem;">Data/Hora de Retorno</label>
+          <input type="datetime-local" name="retorno"
+                 style="width:100%;padding:.55rem .75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.9rem;">
+        </div>
+        <div style="display:flex;gap:.75rem;margin-top:.5rem;">
+          <button type="submit" class="btn btn-primary" style="flex:1;">✅ Encerrar Viagem</button>
+          <a href="{% url 'frota_viagens' %}" class="btn btn-secondary" style="flex:1;text-align:center;">Cancelar</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

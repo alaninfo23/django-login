@@ -2,15 +2,17 @@
 {% block title %}Viagens{% endblock %}
 {% block extra_styles %}
 .table-wrap{overflow-x:auto;}
-table{width:100%;border-collapse:collapse;font-size:.9rem;}
-th{background:#f8fafc;padding:.65rem 1rem;text-align:left;font-weight:600;color:#475569;border-bottom:2px solid #e2e8f0;}
-td{padding:.65rem 1rem;border-bottom:1px solid #f1f5f9;color:#334155;}
+table{width:100%;border-collapse:collapse;font-size:.82rem;}
+th{background:#f8fafc;padding:.5rem .6rem;text-align:left;font-weight:600;color:#475569;border-bottom:2px solid #e2e8f0;white-space:nowrap;}
+td{padding:.5rem .6rem;border-bottom:1px solid #f1f5f9;color:#334155;}
 tr:hover td{background:#fafafa;}
 tr.selected td{background:#eff6ff;}
-.badge{display:inline-block;padding:.2rem .6rem;border-radius:20px;font-size:.78rem;font-weight:600;}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:20px;font-size:.73rem;font-weight:600;}
 .badge-em_andamento{background:#dbeafe;color:#1e40af;}
 .badge-concluida{background:#d1fae5;color:#065f46;}
 .badge-cancelada{background:#fee2e2;color:#991b1b;}
+.acoes{display:flex;flex-direction:column;gap:.3rem;min-width:80px;}
+.acoes .btn{padding:.25rem .55rem;font-size:.75rem;text-align:center;white-space:nowrap;}
 #bulk-bar{display:none;align-items:center;gap:.75rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;}
 #bulk-bar.visible{display:flex;}
 {% endblock %}
@@ -58,32 +60,31 @@ tr.selected td{background:#eff6ff;}
         <thead>
           <tr>
             <th style="width:2rem;"><input type="checkbox" id="check-all" title="Marcar todos"></th>
-            <th>Saída</th><th>Placa</th><th>Marca / Modelo</th>
-            <th>Origem</th><th>Destino</th><th>Motorista</th><th>Ajudantes</th>
-            <th>KM Rodado</th><th>Status</th><th></th>
+            <th>Saída</th><th>Veículo</th>
+            <th>Origem → Destino</th><th>Motorista</th>
+            <th>KM Rod.</th><th>Status</th><th></th>
           </tr>
         </thead>
         <tbody>
           {% for v in page_obj %}
           <tr>
             <td><input type="checkbox" name="ids" value="{{ v.pk }}" class="row-check"></td>
-            <td>{{ v.saida|date:"d/m/Y H:i" }}</td>
-            <td><strong>{{ v.veiculo.placa }}</strong></td>
-            <td>{{ v.veiculo.marca }} {{ v.veiculo.modelo }}</td>
-            <td>{{ v.origem }}</td>
-            <td>{{ v.destino }}</td>
-            <td>{{ v.motorista.nome|default:"—" }}</td>
-            <td style="font-size:.82rem;line-height:1.5;">
-              {% if v.ajudante1_nome %}{{ v.ajudante1_nome }}{% if v.ajudante1_telefone %} ({{ v.ajudante1_telefone }}){% endif %}<br>{% endif %}
-              {% if v.ajudante2_nome %}{{ v.ajudante2_nome }}{% if v.ajudante2_telefone %} ({{ v.ajudante2_telefone }}){% endif %}<br>{% endif %}
-              {% if v.ajudante3_nome %}{{ v.ajudante3_nome }}{% if v.ajudante3_telefone %} ({{ v.ajudante3_telefone }}){% endif %}{% endif %}
-              {% if not v.ajudante1_nome and not v.ajudante2_nome and not v.ajudante3_nome %}—{% endif %}
+            <td style="white-space:nowrap;">{{ v.saida|date:"d/m/Y H:i" }}</td>
+            <td style="white-space:nowrap;"><strong>{{ v.veiculo.placa }}</strong><br><span style="font-size:.75rem;color:#64748b;">{{ v.veiculo.marca }} {{ v.veiculo.modelo }}</span></td>
+            <td>{{ v.origem }} → {{ v.destino }}</td>
+            <td>{{ v.motorista.nome|default:"—" }}
+              {% if v.ajudante1_nome %}<br><span style="font-size:.75rem;color:#64748b;">+{{ v.ajudante1_nome }}{% if v.ajudante2_nome %}, {{ v.ajudante2_nome }}{% endif %}{% if v.ajudante3_nome %}, {{ v.ajudante3_nome }}{% endif %}</span>{% endif %}
             </td>
-            <td>{% if v.km_rodado %}{{ v.km_rodado }} km{% else %}—{% endif %}</td>
+            <td style="white-space:nowrap;">{% if v.km_rodado %}{{ v.km_rodado }} km{% else %}—{% endif %}</td>
             <td><span class="badge badge-{{ v.status }}">{{ v.get_status_display }}</span></td>
-            <td style="white-space:nowrap;">
-              <a href="{% url 'frota_viagem_edit' v.pk %}" class="btn btn-outline" style="padding:.3rem .75rem;font-size:.8rem;">Editar</a>
-              <a href="{% url 'frota_viagem_delete' v.pk %}" class="btn btn-danger" style="padding:.3rem .75rem;font-size:.8rem;">Excluir</a>
+            <td>
+              <div class="acoes">
+                {% if v.status == 'em_andamento' %}
+                <a href="{% url 'frota_viagem_encerrar' v.pk %}" class="btn btn-primary">🏁 Encerrar</a>
+                {% endif %}
+                <a href="{% url 'frota_viagem_edit' v.pk %}" class="btn btn-outline">Editar</a>
+                <a href="{% url 'frota_viagem_delete' v.pk %}" class="btn btn-danger">Excluir</a>
+              </div>
             </td>
           </tr>
           {% endfor %}

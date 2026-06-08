@@ -25,38 +25,34 @@
     <div class="form-grid">
       <div class="field full">
         <label class="field-label">Nome Completo *</label>
-        <input class="field-input" name="nome"
-               value="{{ post.nome|default:motorista.nome|default:'' }}" required maxlength="200">
+        <input class="field-input" name="nome" required maxlength="200"
+               value="{{ post.nome|default:'' }}{% if not post and motorista %}{{ motorista.nome }}{% endif %}">
       </div>
       <div class="field">
         <label class="field-label">CPF</label>
-        <input class="field-input {% if erros.cpf %}erro{% endif %}"
-               name="cpf" id="cpf"
-               value="{{ post.cpf|default:motorista.cpf|default:'' }}"
-               maxlength="14" placeholder="000.000.000-00" inputmode="numeric">
-        {% if erros.cpf %}<span class="field-erro">{{ erros.cpf }}</span>{% endif %}
+        <input class="field-input" name="cpf" id="cpf" maxlength="14"
+               placeholder="000.000.000-00" inputmode="numeric"
+               value="{{ post.cpf|default:'' }}{% if not post and motorista %}{{ motorista.cpf }}{% endif %}">
       </div>
       <div class="field">
         <label class="field-label">Telefone</label>
-        <input class="field-input" name="telefone"
-               value="{{ post.telefone|default:motorista.telefone|default:'' }}"
-               maxlength="20" placeholder="(00) 00000-0000">
+        <input class="field-input" name="telefone" maxlength="20" placeholder="(00) 00000-0000"
+               value="{{ post.telefone|default:'' }}{% if not post and motorista %}{{ motorista.telefone }}{% endif %}">
       </div>
       <div class="field">
         <label class="field-label">Número da CNH</label>
-        <input class="field-input {% if erros.cnh_numero %}erro{% endif %}"
-               name="cnh_numero" id="cnh_numero"
-               value="{{ post.cnh_numero|default:motorista.cnh_numero|default:'' }}"
-               maxlength="11" placeholder="00000000000" inputmode="numeric">
-        {% if erros.cnh_numero %}<span class="field-erro">{{ erros.cnh_numero }}</span>{% endif %}
+        <input class="field-input" name="cnh_numero" id="cnh_numero" maxlength="11"
+               placeholder="00000000000" inputmode="numeric"
+               value="{{ post.cnh_numero|default:'' }}{% if not post and motorista %}{{ motorista.cnh_numero }}{% endif %}">
       </div>
       <div class="field">
         <label class="field-label">Categoria CNH</label>
         <select class="field-input" name="cnh_categoria">
           <option value="">—</option>
-          {% for c in categorias %}
+          {% for c in categoria_choices %}
           <option value="{{ c.value }}"
-            {% if post.cnh_categoria == c.value or motorista.cnh_categoria == c.value %}selected{% endif %}>
+            {% if post.cnh_categoria == c.value %}selected
+            {% elif not post and motorista and motorista.cnh_categoria == c.value %}selected{% endif %}>
             {{ c.label }}
           </option>
           {% endfor %}
@@ -65,14 +61,16 @@
       <div class="field">
         <label class="field-label">Validade CNH</label>
         <input class="field-input" type="date" name="cnh_validade"
-               value="{{ post.cnh_validade|default:motorista.cnh_validade|date:'Y-m-d'|default:'' }}">
+               value="{{ post.cnh_validade|default:'' }}{% if not post and motorista and motorista.cnh_validade %}{{ motorista.cnh_validade|date:'Y-m-d' }}{% endif %}">
       </div>
       <div class="field">
         <label class="field-label">Status *</label>
         <select class="field-input" name="status" required>
           {% for s in status_choices %}
           <option value="{{ s.value }}"
-            {% if post.status == s.value or motorista.status == s.value %}selected{% endif %}>
+            {% if post.status == s.value %}selected
+            {% elif not post and motorista and motorista.status == s.value %}selected
+            {% elif not post and not motorista and s.value == 'ativo' %}selected{% endif %}>
             {{ s.label }}
           </option>
           {% endfor %}
@@ -80,8 +78,7 @@
       </div>
       <div class="field full">
         <label class="field-label">Observações</label>
-        <textarea class="field-input" name="observacoes"
-                  rows="3">{{ post.observacoes|default:motorista.observacoes|default:'' }}</textarea>
+        <textarea class="field-input" name="observacoes" rows="3">{{ post.observacoes|default:'' }}{% if not post and motorista %}{{ motorista.observacoes }}{% endif %}</textarea>
       </div>
     </div>
     <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
@@ -93,7 +90,6 @@
 {% endblock %}
 {% block extra_scripts %}
 <script>
-// Máscara CPF: 000.000.000-00
 document.getElementById('cpf').addEventListener('input', function() {
   let v = this.value.replace(/\D/g, '').slice(0, 11);
   if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
@@ -101,8 +97,6 @@ document.getElementById('cpf').addEventListener('input', function() {
   else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
   this.value = v;
 });
-
-// CNH: apenas dígitos, máx 11
 document.getElementById('cnh_numero').addEventListener('input', function() {
   this.value = this.value.replace(/\D/g, '').slice(0, 11);
 });
