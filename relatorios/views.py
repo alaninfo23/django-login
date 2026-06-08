@@ -483,6 +483,7 @@ def _frotas_qs(request, de, ate):
         ab_qs  = ab_qs.filter(veiculo_id=veiculo_pk)
         man_qs = man_qs.filter(veiculo_id=veiculo_pk)
         via_qs = via_qs.filter(veiculo_id=veiculo_pk)
+        vei_qs = vei_qs.filter(pk=veiculo_pk)
 
     return vei_qs, ab_qs, man_qs, via_qs
 
