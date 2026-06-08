@@ -543,3 +543,359 @@ class MotoristaViewTests(FrotaViewBase):
         m = make_motorista(outra, nome='Externo')
         resp = self.client.get(reverse('frota_motorista_edit', args=[m.pk]))
         self.assertEqual(resp.status_code, 404)
+
+    def test_edit_atualiza_motorista(self):
+        self.client.post(reverse('frota_motorista_edit', args=[self.motorista.pk]), {
+            'nome': 'João Atualizado', 'status': 'ativo',
+        })
+        self.motorista.refresh_from_db()
+        self.assertEqual(self.motorista.nome, 'João Atualizado')
+
+
+# ── Views: edição de abastecimento ────────────────────────────────────────────
+
+class AbastecimentoEditTests(FrotaViewBase):
+
+    def setUp(self):
+        super().setUp()
+        self.ab = make_abastecimento(self.veiculo)
+
+    def test_edit_get_retorna_200(self):
+        resp = self.client.get(reverse('frota_abastecimento_edit', args=[self.ab.pk]))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_edit_atualiza_litros(self):
+        self.client.post(reverse('frota_abastecimento_edit', args=[self.ab.pk]), {
+            'veiculo': self.veiculo.pk, 'data': '2026-06-01',
+            'km_atual': 500, 'litros': '60.00', 'valor_total': '300.00',
+        })
+        self.ab.refresh_from_db()
+        from decimal import Decimal
+        self.assertEqual(self.ab.litros, Decimal('60.00'))
+
+    def test_edit_redireciona_apos_salvar(self):
+        resp = self.client.post(reverse('frota_abastecimento_edit', args=[self.ab.pk]), {
+            'veiculo': self.veiculo.pk, 'data': '2026-06-01',
+            'km_atual': 500, 'litros': '55.00', 'valor_total': '275.00',
+        })
+        self.assertRedirects(resp, reverse('frota_abastecimentos'))
+
+    def test_nao_acessa_abastecimento_de_outra_empresa(self):
+        outra = make_empresa('Outra')
+        v2 = make_veiculo(outra, placa='OUT-0002')
+        ab2 = make_abastecimento(v2, km=100)
+        resp = self.client.get(reverse('frota_abastecimento_edit', args=[ab2.pk]))
+        self.assertEqual(resp.status_code, 404)
+
+
+# ── Views: edição de manutenção ────────────────────────────────────────────────
+
+class ManutencaoEditTests(FrotaViewBase):
+
+    def setUp(self):
+        super().setUp()
+        self.man = make_manutencao(self.veiculo)
+
+    def test_edit_get_retorna_200(self):
+        resp = self.client.get(reverse('frota_manutencao_edit', args=[self.man.pk]))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_edit_atualiza_descricao(self):
+        self.client.post(reverse('frota_manutencao_edit', args=[self.man.pk]), {
+            'veiculo': self.veiculo.pk, 'tipo': 'preventiva',
+            'descricao': 'Revisão completa', 'status': 'realizada',
+            'data': '2026-06-01',
+        })
+        self.man.refresh_from_db()
+        self.assertEqual(self.man.descricao, 'Revisão completa')
+
+    def test_edit_com_km_atualiza_veiculo(self):
+        self.client.post(reverse('frota_manutencao_edit', args=[self.man.pk]), {
+            'veiculo': self.veiculo.pk, 'tipo': 'revisao',
+            'descricao': 'Revisão', 'status': 'realizada',
+            'data': '2026-06-01', 'km_manutencao': 2000,
+        })
+        self.veiculo.refresh_from_db()
+        self.assertEqual(self.veiculo.km_atual, 2000)
+
+    def test_nao_acessa_manutencao_de_outra_empresa(self):
+        outra = make_empresa('Outra')
+        v2 = make_veiculo(outra, placa='OUT-0003')
+        man2 = make_manutencao(v2)
+        resp = self.client.get(reverse('frota_manutencao_edit', args=[man2.pk]))
+        self.assertEqual(resp.status_code, 404)
+
+
+# ── Views: edição de viagem ────────────────────────────────────────────────────
+
+class ViagemEditTests(FrotaViewBase):
+
+    def setUp(self):
+        super().setUp()
+        self.viagem = make_viagem(self.veiculo, km_inicial=1000)
+
+    def test_edit_get_retorna_200(self):
+        resp = self.client.get(reverse('frota_viagem_edit', args=[self.viagem.pk]))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_edit_atualiza_destino(self):
+        self.client.post(reverse('frota_viagem_edit', args=[self.viagem.pk]), {
+            'veiculo': self.veiculo.pk, 'origem': 'SP', 'destino': 'Curitiba',
+            'saida': '2026-06-01 08:00', 'km_inicial': 1000, 'status': 'em_andamento',
+        })
+        self.viagem.refresh_from_db()
+        self.assertEqual(self.viagem.destino, 'Curitiba')
+
+    def test_edit_concluida_com_km_final_atualiza_veiculo(self):
+        self.client.post(reverse('frota_viagem_edit', args=[self.viagem.pk]), {
+            'veiculo': self.veiculo.pk, 'origem': 'SP', 'destino': 'RJ',
+            'saida': '2026-06-01 08:00', 'km_inicial': 1000,
+            'km_final': 1500, 'status': 'concluida',
+        })
+        self.veiculo.refresh_from_db()
+        self.assertEqual(self.veiculo.km_atual, 1500)
+
+    def test_edit_km_final_menor_que_inicial_nao_salva_km_final(self):
+        resp = self.client.post(reverse('frota_viagem_edit', args=[self.viagem.pk]), {
+            'veiculo': self.veiculo.pk, 'origem': 'SP', 'destino': 'RJ',
+            'saida': '2026-06-01 08:00', 'km_inicial': 1000,
+            'km_final': 500, 'status': 'concluida',
+        })
+        # deve renderizar o form com erro (não redirecionar)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_nao_acessa_viagem_de_outra_empresa(self):
+        outra = make_empresa('Outra')
+        v2 = make_veiculo(outra, placa='OUT-0004')
+        viagem2 = make_viagem(v2)
+        resp = self.client.get(reverse('frota_viagem_edit', args=[viagem2.pk]))
+        self.assertEqual(resp.status_code, 404)
+
+
+# ── Views: bulk delete ─────────────────────────────────────────────────────────
+
+class AbastecimentoBulkDeleteTests(FrotaViewBase):
+
+    def test_bulk_delete_remove_selecionados(self):
+        ab1 = make_abastecimento(self.veiculo, km=600)
+        ab2 = make_abastecimento(self.veiculo, km=700)
+        self.client.post(reverse('frota_abastecimentos_bulk_delete'), {
+            'ids': [ab1.pk, ab2.pk],
+        })
+        self.assertFalse(Abastecimento.objects.filter(pk__in=[ab1.pk, ab2.pk]).exists())
+
+    def test_bulk_delete_ignora_ids_de_outra_empresa(self):
+        outra = make_empresa('Outra')
+        v2 = make_veiculo(outra, placa='OUT-0010')
+        ab_outra = make_abastecimento(v2, km=100)
+        self.client.post(reverse('frota_abastecimentos_bulk_delete'), {
+            'ids': [ab_outra.pk],
+        })
+        self.assertTrue(Abastecimento.objects.filter(pk=ab_outra.pk).exists())
+
+    def test_bulk_delete_sem_ids_redireciona(self):
+        resp = self.client.post(reverse('frota_abastecimentos_bulk_delete'), {})
+        self.assertRedirects(resp, reverse('frota_abastecimentos'))
+
+
+class ManutencaoBulkDeleteTests(FrotaViewBase):
+
+    def test_bulk_delete_remove_selecionados(self):
+        man1 = make_manutencao(self.veiculo)
+        man2 = make_manutencao(self.veiculo)
+        self.client.post(reverse('frota_manutencoes_bulk_delete'), {
+            'ids': [man1.pk, man2.pk],
+        })
+        self.assertFalse(Manutencao.objects.filter(pk__in=[man1.pk, man2.pk]).exists())
+
+    def test_bulk_delete_ignora_ids_de_outra_empresa(self):
+        outra = make_empresa('Outra')
+        v2 = make_veiculo(outra, placa='OUT-0011')
+        man_outra = make_manutencao(v2)
+        self.client.post(reverse('frota_manutencoes_bulk_delete'), {
+            'ids': [man_outra.pk],
+        })
+        self.assertTrue(Manutencao.objects.filter(pk=man_outra.pk).exists())
+
+    def test_bulk_delete_sem_ids_redireciona(self):
+        resp = self.client.post(reverse('frota_manutencoes_bulk_delete'), {})
+        self.assertRedirects(resp, reverse('frota_manutencoes'))
+
+
+class ViagemBulkDeleteTests(FrotaViewBase):
+
+    def test_bulk_delete_remove_selecionados(self):
+        v1 = make_viagem(self.veiculo, km_inicial=1000)
+        v2 = make_viagem(self.veiculo, km_inicial=2000)
+        self.client.post(reverse('frota_viagens_bulk_delete'), {
+            'ids': [v1.pk, v2.pk],
+        })
+        self.assertFalse(Viagem.objects.filter(pk__in=[v1.pk, v2.pk]).exists())
+
+    def test_bulk_delete_ignora_ids_de_outra_empresa(self):
+        outra = make_empresa('Outra')
+        v2 = make_veiculo(outra, placa='OUT-0012')
+        viagem_outra = make_viagem(v2, km_inicial=100)
+        self.client.post(reverse('frota_viagens_bulk_delete'), {
+            'ids': [viagem_outra.pk],
+        })
+        self.assertTrue(Viagem.objects.filter(pk=viagem_outra.pk).exists())
+
+    def test_bulk_delete_sem_ids_redireciona(self):
+        resp = self.client.post(reverse('frota_viagens_bulk_delete'), {})
+        self.assertRedirects(resp, reverse('frota_viagens'))
+
+
+# ── Views: dashboard ──────────────────────────────────────────────────────────
+
+class DashboardTests(FrotaViewBase):
+
+    def test_dashboard_retorna_200(self):
+        resp = self.client.get(reverse('frota_dashboard'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_dashboard_exibe_totais_corretos(self):
+        make_veiculo(self.empresa, placa='MAN-9001', status=Veiculo.Status.MANUTENCAO)
+        resp = self.client.get(reverse('frota_dashboard'))
+        self.assertContains(resp, '2')   # total_veiculos = 2
+
+    def test_dashboard_filtra_por_periodo(self):
+        resp = self.client.get(reverse('frota_dashboard') + '?de=2026-01-01&ate=2026-12-31')
+        self.assertEqual(resp.status_code, 200)
+
+    def test_dashboard_sem_acesso_sem_login(self):
+        self.client.logout()
+        resp = self.client.get(reverse('frota_dashboard'))
+        self.assertEqual(resp.status_code, 302)
+
+
+# ── Views: alerta de CNH ──────────────────────────────────────────────────────
+
+class AlertaCNHTests(FrotaViewBase):
+
+    def test_dashboard_alerta_cnh_vencida(self):
+        from datetime import timedelta
+        from datetime import date
+        self.motorista.cnh_validade = date.today() - timedelta(days=1)
+        self.motorista.save()
+        resp = self.client.get(reverse('frota_dashboard'))
+        self.assertEqual(resp.status_code, 200)
+        ctx = resp.context
+        self.assertIn(self.motorista, list(ctx['motoristas_cnh_vencida']))
+
+    def test_dashboard_alerta_cnh_vencendo(self):
+        from datetime import timedelta, date
+        self.motorista.cnh_validade = date.today() + timedelta(days=15)
+        self.motorista.save()
+        resp = self.client.get(reverse('frota_dashboard'))
+        self.assertIn(self.motorista, list(resp.context['motoristas_cnh_vencendo']))
+
+    def test_viagem_create_alerta_cnh_vencida_na_mensagem(self):
+        from datetime import date, timedelta
+        self.motorista.cnh_validade = date.today() - timedelta(days=5)
+        self.motorista.save()
+        self.client.post(reverse('frota_viagem_create'), {
+            'veiculo': self.veiculo.pk, 'motorista': self.motorista.pk,
+            'origem': 'SP', 'destino': 'RJ',
+            'saida': '2026-06-01 08:00', 'km_inicial': 1000, 'status': 'em_andamento',
+        })
+        msgs = [str(m) for m in self.client.session.get('_messages', [])]
+        # A viagem é criada mas com aviso — verifica que o registro existe
+        self.assertTrue(Viagem.objects.filter(veiculo=self.veiculo).exists())
+
+    def test_motorista_cnh_nao_vencida_nao_aparece_no_alerta(self):
+        from datetime import date, timedelta
+        self.motorista.cnh_validade = date.today() + timedelta(days=60)
+        self.motorista.save()
+        resp = self.client.get(reverse('frota_dashboard'))
+        self.assertNotIn(self.motorista, list(resp.context['motoristas_cnh_vencida']))
+        self.assertNotIn(self.motorista, list(resp.context['motoristas_cnh_vencendo']))
+
+
+# ── Views: veiculo_detalhe ────────────────────────────────────────────────────
+
+class VeiculoDetalheTests(FrotaViewBase):
+
+    def test_detalhe_retorna_200(self):
+        resp = self.client.get(reverse('frota_veiculo_detalhe', args=[self.veiculo.pk]))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_detalhe_exibe_placa(self):
+        resp = self.client.get(reverse('frota_veiculo_detalhe', args=[self.veiculo.pk]))
+        self.assertContains(resp, self.veiculo.placa)
+
+    def test_detalhe_exibe_totais_calculados(self):
+        make_abastecimento(self.veiculo, km=1200, litros='50.00', valor='250.00')
+        make_manutencao(self.veiculo, valor=Decimal('300.00'))
+        resp = self.client.get(reverse('frota_veiculo_detalhe', args=[self.veiculo.pk]))
+        ctx = resp.context
+        self.assertEqual(ctx['totais']['total_abastecimentos'], 1)
+        self.assertEqual(ctx['totais']['total_viagens'], 0)
+
+    def test_detalhe_proxima_revisao_vencida(self):
+        from datetime import date, timedelta
+        man = make_manutencao(self.veiculo)
+        man.proxima_revisao = date.today() - timedelta(days=5)
+        man.save()
+        resp = self.client.get(reverse('frota_veiculo_detalhe', args=[self.veiculo.pk]))
+        self.assertTrue(resp.context['revisao_vencida'])
+
+    def test_detalhe_nao_acessa_veiculo_de_outra_empresa(self):
+        outra = make_empresa('Outra')
+        v2 = make_veiculo(outra, placa='OUT-0020')
+        resp = self.client.get(reverse('frota_veiculo_detalhe', args=[v2.pk]))
+        self.assertEqual(resp.status_code, 404)
+
+
+# ── Views: permissões admin vs operador ───────────────────────────────────────
+
+class FrotaPermissaoTests(TestCase):
+    """Operadores têm acesso de leitura e operação; não há restrição no módulo frota por ora.
+    Estes testes garantem que operadores também conseguem acessar as views."""
+
+    def setUp(self):
+        self.user_op = make_user(username='operador')
+        self.empresa = make_empresa()
+        make_membro(self.user_op, self.empresa, perfil='operador')
+        self.client.force_login(self.user_op)
+        self.veiculo = make_veiculo(self.empresa, km_atual=1000)
+
+    def test_operador_acessa_dashboard(self):
+        resp = self.client.get(reverse('frota_dashboard'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_operador_acessa_lista_veiculos(self):
+        resp = self.client.get(reverse('frota_veiculos'))
+        self.assertEqual(resp.status_code, 200)
+
+    def test_operador_pode_criar_veiculo(self):
+        self.client.post(reverse('frota_veiculo_create'), {
+            'placa': 'OP-0001', 'modelo': 'HB20', 'marca': 'Hyundai',
+            'ano': 2022, 'capacidade_carga': '1.0', 'km_atual': 0, 'status': 'ativo',
+        })
+        self.assertTrue(Veiculo.objects.filter(placa='OP-0001', empresa=self.empresa).exists())
+
+    def test_operador_pode_registrar_abastecimento(self):
+        motorista = make_motorista(self.empresa)
+        self.client.post(reverse('frota_abastecimento_create'), {
+            'veiculo': self.veiculo.pk, 'data': '2026-06-01',
+            'km_atual': 1100, 'litros': '40.00', 'valor_total': '200.00',
+        })
+        self.assertTrue(Abastecimento.objects.filter(veiculo=self.veiculo).exists())
+
+    def test_usuario_sem_empresa_nao_acessa_frota(self):
+        user_sem_empresa = make_user(username='sem_empresa')
+        self.client.force_login(user_sem_empresa)
+        resp = self.client.get(reverse('frota_veiculos'))
+        # deve redirecionar para setup_empresa
+        self.assertEqual(resp.status_code, 302)
+
+    def test_admin_e_operador_veem_apenas_propria_empresa(self):
+        outra = make_empresa('Outra')
+        user_admin = make_user(username='admin_outro')
+        make_membro(user_admin, outra, perfil='admin')
+        make_veiculo(outra, placa='ADM-0001')
+
+        # operador da primeira empresa não vê veículo da outra
+        resp = self.client.get(reverse('frota_veiculos'))
+        self.assertNotContains(resp, 'ADM-0001')

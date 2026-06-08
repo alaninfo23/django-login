@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from datetime import date
 
 from django.test import TestCase
 from django.urls import reverse
@@ -9,6 +10,7 @@ from django.utils.text import slugify
 from empresa.models import Empresa, MembroEmpresa
 from assets.models import Asset
 from financeiro.models import CentroCusto, Despesa, FormaPagamento, Repasse, SubGrupo
+from frota.models import Veiculo, Abastecimento, Manutencao, Motorista, Viagem
 from relatorios.views import _fmt_valor, _fmt_data, _parse_periodo
 
 
@@ -320,3 +322,180 @@ class FinanceiroExcelTests(TestCase):
         ws = wb.active
         valores = [str(c.value or '') for row in ws.iter_rows() for c in row]
         self.assertIn('Assinatura Adobe', valores)
+
+
+# ── helpers de frota ──────────────────────────────────────────────────────────
+
+def make_veiculo(empresa, placa='ABC-1234', km_atual=1000):
+    return Veiculo.objects.create(
+        empresa=empresa, placa=placa, modelo='Gol', marca='VW',
+        ano=2020, capacidade_carga='1.5', km_atual=km_atual,
+    )
+
+
+def make_abastecimento_rel(veiculo):
+    return Abastecimento.objects.create(
+        veiculo=veiculo, data=date(2026, 6, 1),
+        km_atual=1200, litros='50.00', valor_total='250.00',
+    )
+
+
+def make_manutencao_rel(veiculo):
+    return Manutencao.objects.create(
+        veiculo=veiculo, tipo=Manutencao.Tipo.PREVENTIVA,
+        descricao='Troca de óleo', status=Manutencao.Status.REALIZADA,
+        data=date(2026, 6, 1), valor='350.00',
+    )
+
+
+def make_viagem_rel(veiculo):
+    from datetime import datetime
+    return Viagem.objects.create(
+        veiculo=veiculo, origem='SP', destino='RJ',
+        saida=datetime(2026, 6, 1, 8, 0),
+        km_inicial=1000, km_final=1400,
+        status=Viagem.Status.CONCLUIDA,
+    )
+
+
+# ── View: frotas_pdf ──────────────────────────────────────────────────────────
+
+class FrotasPdfTests(TestCase):
+
+    def setUp(self):
+        self.user = make_user()
+        self.empresa = make_empresa()
+        make_membro(self.user, self.empresa)
+        self.client.force_login(self.user)
+        self.veiculo = make_veiculo(self.empresa)
+        self.url = reverse('rel_frotas_pdf')
+
+    def test_gera_pdf_veiculos(self):
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=veiculos')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'application/pdf')
+
+    def test_gera_pdf_abastecimentos(self):
+        make_abastecimento_rel(self.veiculo)
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=abastecimentos')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'application/pdf')
+
+    def test_gera_pdf_manutencoes(self):
+        make_manutencao_rel(self.veiculo)
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=manutencoes')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'application/pdf')
+
+    def test_gera_pdf_viagens(self):
+        make_viagem_rel(self.veiculo)
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=viagens')
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'application/pdf')
+
+    def test_gera_pdf_todos(self):
+        make_abastecimento_rel(self.veiculo)
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=todos')
+        self.assertEqual(resp.status_code, 200)
+
+    def test_redireciona_sem_dados_abastecimentos(self):
+        """Sem abastecimentos no período deve redirecionar."""
+        resp = self.client.get(self.url + '?de=2020-01-01&ate=2020-01-31&subtipo=abastecimentos')
+        self.assertEqual(resp.status_code, 302)
+
+    def test_filtro_por_veiculo(self):
+        """Com veiculo_pk específico só inclui registros daquele veículo."""
+        make_abastecimento_rel(self.veiculo)
+        outro = make_veiculo(self.empresa, placa='ZZZ-9999')
+        resp = self.client.get(
+            self.url + f'?de=2026-06-01&ate=2026-06-30&subtipo=abastecimentos&veiculo={outro.pk}'
+        )
+        # sem abastecimento para esse veículo — redireciona
+        self.assertEqual(resp.status_code, 302)
+
+    def test_filename_contem_frotas(self):
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=veiculos')
+        self.assertIn('frotas', resp['Content-Disposition'])
+
+    def test_nao_acessa_sem_login(self):
+        self.client.logout()
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30')
+        self.assertEqual(resp.status_code, 302)
+
+
+# ── View: frotas_excel ────────────────────────────────────────────────────────
+
+class FrotasExcelTests(TestCase):
+
+    def setUp(self):
+        self.user = make_user()
+        self.empresa = make_empresa()
+        make_membro(self.user, self.empresa)
+        self.client.force_login(self.user)
+        self.veiculo = make_veiculo(self.empresa)
+        self.url = reverse('rel_frotas_excel')
+
+    def test_gera_excel_veiculos(self):
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=veiculos')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('spreadsheet', resp['Content-Type'])
+
+    def test_gera_excel_abastecimentos(self):
+        make_abastecimento_rel(self.veiculo)
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=abastecimentos')
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('spreadsheet', resp['Content-Type'])
+
+    def test_gera_excel_manutencoes(self):
+        make_manutencao_rel(self.veiculo)
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=manutencoes')
+        self.assertEqual(resp.status_code, 200)
+
+    def test_gera_excel_viagens(self):
+        make_viagem_rel(self.veiculo)
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=viagens')
+        self.assertEqual(resp.status_code, 200)
+
+    def test_gera_excel_todos(self):
+        make_abastecimento_rel(self.veiculo)
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=todos')
+        self.assertEqual(resp.status_code, 200)
+
+    def test_redireciona_sem_dados(self):
+        resp = self.client.get(self.url + '?de=2020-01-01&ate=2020-01-31&subtipo=abastecimentos')
+        self.assertEqual(resp.status_code, 302)
+
+    def test_excel_abastecimentos_contem_placa(self):
+        """Excel de abastecimentos deve conter a placa do veículo."""
+        make_abastecimento_rel(self.veiculo)
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=abastecimentos')
+        self.assertEqual(resp.status_code, 200)
+        import io as _io
+        from openpyxl import load_workbook
+        wb = load_workbook(_io.BytesIO(resp.content))
+        ws = wb.active
+        valores = [str(c.value or '') for row in ws.iter_rows() for c in row]
+        self.assertIn('ABC-1234', valores)
+
+    def test_excel_todos_gera_multiplas_abas(self):
+        """subtipo=todos deve gerar abas para cada entidade com dados."""
+        make_abastecimento_rel(self.veiculo)
+        make_manutencao_rel(self.veiculo)
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=todos')
+        self.assertEqual(resp.status_code, 200)
+        import io as _io
+        from openpyxl import load_workbook
+        wb = load_workbook(_io.BytesIO(resp.content))
+        # deve ter aba Veículos, Abastecimentos e Manutenções
+        self.assertIn('Veículos', wb.sheetnames)
+        self.assertIn('Abastecimentos', wb.sheetnames)
+        self.assertIn('Manutenções', wb.sheetnames)
+
+    def test_isolamento_entre_empresas(self):
+        """Relatório não deve incluir dados de outra empresa."""
+        outra = make_empresa('Outra')
+        v2 = make_veiculo(outra, placa='OUT-0001')
+        make_abastecimento_rel(v2)
+        resp = self.client.get(self.url + '?de=2026-06-01&ate=2026-06-30&subtipo=abastecimentos')
+        # empresa do usuário logado não tem abastecimentos → redireciona
+        self.assertEqual(resp.status_code, 302)

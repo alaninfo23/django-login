@@ -168,10 +168,24 @@
           <input type="date" id="frt-ate" value="{{ ate }}">
         </div>
       </div>
+      <div class="field">
+        <label>Relatório</label>
+        <select id="frt-subtipo">
+          {% for val, lbl in frota_subtipos %}
+          <option value="{{ val }}">{{ lbl }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Veículo</label>
+        <select id="frt-veiculo">
+          <option value="">Todos</option>
+          {% for v in veiculos %}
+          <option value="{{ v.pk }}">{{ v.placa }} — {{ v.marca }} {{ v.modelo }}</option>
+          {% endfor %}
+        </select>
+      </div>
     </div>
-    <p style="color:#94a3b8;font-size:.9rem;margin-bottom:1rem;">
-      ⚠️ Módulo de Frotas em desenvolvimento — os relatórios serão aprimorados em breve.
-    </p>
     <div class="export-btns">
       <a id="frt-pdf-btn" href="#" class="btn-pdf">📄 Exportar PDF</a>
       <a id="frt-excel-btn" href="#" class="btn-excel">📊 Exportar Excel</a>
@@ -239,13 +253,15 @@ updateFinanceiro();
 // ── Frotas ─────────────────────────────────────────────────────────
 function updateFrotas() {
   const p = {
-    de:  document.getElementById('frt-de').value,
-    ate: document.getElementById('frt-ate').value,
+    de:      document.getElementById('frt-de').value,
+    ate:     document.getElementById('frt-ate').value,
+    subtipo: document.getElementById('frt-subtipo').value,
+    veiculo: document.getElementById('frt-veiculo').value,
   };
   document.getElementById('frt-pdf-btn').href   = buildUrl('{% url "rel_frotas_pdf" %}', p);
   document.getElementById('frt-excel-btn').href = buildUrl('{% url "rel_frotas_excel" %}', p);
 }
-['frt-de','frt-ate'].forEach(id =>
+['frt-de','frt-ate','frt-subtipo','frt-veiculo'].forEach(id =>
   document.getElementById(id).addEventListener('change', updateFrotas));
 updateFrotas();
 </script>
