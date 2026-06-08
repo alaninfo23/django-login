@@ -4,7 +4,7 @@ from empresa.models import Empresa
 
 
 class CentroCusto(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='centros_custo', null=True)
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='centros_custo')
     user    = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='centros_custo')
     nome    = models.CharField(max_length=200)
 
@@ -17,7 +17,7 @@ class CentroCusto(models.Model):
 
 
 class SubGrupo(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='subgrupos', null=True)
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='subgrupos')
     user    = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='subgrupos')
     nome    = models.CharField(max_length=200)
 
@@ -30,7 +30,7 @@ class SubGrupo(models.Model):
 
 
 class FormaPagamento(models.Model):
-    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='formas_pagamento', null=True)
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='formas_pagamento')
     user    = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='formas_pagamento')
     nome    = models.CharField(max_length=200)
 
@@ -47,7 +47,7 @@ class Despesa(models.Model):
         PAGO     = 'pago',     'Pago'
         PENDENTE = 'pendente', 'Pendente'
 
-    empresa         = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='despesas', null=True)
+    empresa         = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='despesas')
     user            = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='despesas')
     data            = models.DateField()
     centro_custo    = models.CharField(max_length=200, verbose_name='Centro de Custo')
@@ -70,7 +70,7 @@ class Repasse(models.Model):
         APORTE  = 'aporte',  'Aporte'
         REPASSE = 'repasse', 'Repasse'
 
-    empresa    = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='repasses', null=True)
+    empresa    = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='repasses')
     user       = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='repasses')
     data       = models.DateField()
     origem     = models.CharField(max_length=200, verbose_name='Centro de Origem')

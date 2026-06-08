@@ -10,6 +10,7 @@ class EmpresaMiddleware:
             membro = (request.user.membros
                       .select_related('empresa')
                       .filter(ativo=True, empresa__ativa=True)
+                      .order_by('id')
                       .first())
             if membro:
                 request.empresa = membro.empresa

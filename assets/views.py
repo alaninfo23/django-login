@@ -2,7 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 
-from empresa.decorators import requer_admin
+from empresa.decorators import requer_admin, requer_empresa
 from .models import Asset
 
 FIELDS = ['name', 'asset_type', 'acquisition_value', 'purchase_date', 'status', 'location', 'notes']
@@ -12,8 +12,8 @@ def _parse_post(post):
     return {f: (post.get(f) or None) if f in NULLABLE_FIELDS else (post.get(f) or '') for f in FIELDS}
 
 
-def _owned_or_404(pk, user):
-    return get_object_or_404(Asset, pk=pk, user=user)
+def _asset_or_404(pk, empresa):
+    return get_object_or_404(Asset, pk=pk, empresa=empresa)
 
 
 @login_required
@@ -22,8 +22,9 @@ def home(request):
 
 
 @login_required
+@requer_empresa
 def asset_list(request):
-    qs = Asset.objects.filter(user=request.user)
+    qs = Asset.objects.filter(empresa=request.empresa)
 
     q           = request.GET.get('q', '').strip()
     asset_type  = request.GET.get('asset_type', '')
@@ -51,17 +52,19 @@ def asset_list(request):
 
 
 @login_required
+@requer_empresa
 def asset_create(request):
     if request.method == 'POST':
-        Asset.objects.create(user=request.user, **_parse_post(request.POST))
+        Asset.objects.create(user=request.user, empresa=request.empresa, **_parse_post(request.POST))
         return redirect('asset_list')
     return render(request, 'assets/form.html', {'asset': None, 'asset_types': Asset.AssetType, 'statuses': Asset.Status})
 
 
 @login_required
+@requer_empresa
 @requer_admin
 def asset_edit(request, pk):
-    asset = _owned_or_404(pk, request.user)
+    asset = _asset_or_404(pk, request.empresa)
     if request.method == 'POST':
         for f, v in _parse_post(request.POST).items():
             setattr(asset, f, v)
@@ -71,9 +74,10 @@ def asset_edit(request, pk):
 
 
 @login_required
+@requer_empresa
 @requer_admin
 def asset_delete(request, pk):
-    asset = _owned_or_404(pk, request.user)
+    asset = _asset_or_404(pk, request.empresa)
     if request.method == 'POST':
         asset.delete()
         return redirect('asset_list')
@@ -81,15 +85,15 @@ def asset_delete(request, pk):
 
 
 @login_required
+@requer_empresa
 def dashboard(request):
-    qs = Asset.objects.filter(user=request.user)
+    qs = Asset.objects.filter(empresa=request.empresa)
 
     totals = qs.aggregate(total=Count('id'), patrimonio=Sum('acquisition_value'))
 
     by_type   = qs.values('asset_type').annotate(count=Count('id')).order_by('-count')
     by_status = qs.values('status').annotate(count=Count('id')).order_by('-count')
 
-    # resolve display labels
     type_labels   = dict(Asset.AssetType.choices)
     status_labels = dict(Asset.Status.choices)
     for row in by_type:

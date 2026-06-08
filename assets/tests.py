@@ -1,7 +1,6 @@
-from datetime import date
 from decimal import Decimal
 
-from django.test import TestCase, Client
+from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth.models import User
 from django.utils.text import slugify
@@ -20,16 +19,19 @@ def make_empresa(nome='Empresa Teste'):
     return Empresa.objects.create(nome=nome, slug=slugify(nome))
 
 
-def make_asset(user, empresa=None, **kwargs):
+def make_membro(user, empresa, perfil='admin'):
+    return MembroEmpresa.objects.create(empresa=empresa, user=user, perfil=perfil)
+
+
+def make_asset(user, empresa, **kwargs):
     defaults = dict(
         name='Notebook Dell',
         asset_type=Asset.AssetType.IT,
         acquisition_value=Decimal('4500.00'),
         status=Asset.Status.ACTIVE,
-        empresa=empresa,
     )
     defaults.update(kwargs)
-    return Asset.objects.create(user=user, **defaults)
+    return Asset.objects.create(user=user, empresa=empresa, **defaults)
 
 
 # ── Model ──────────────────────────────────────────────────────────────────────
@@ -38,14 +40,15 @@ class AssetModelTests(TestCase):
 
     def setUp(self):
         self.user = make_user()
+        self.empresa = make_empresa()
 
     def test_str_retorna_nome_tipo_e_usuario(self):
-        asset = make_asset(self.user)
+        asset = make_asset(self.user, self.empresa)
         self.assertIn('Notebook Dell', str(asset))
         self.assertIn(self.user.username, str(asset))
 
     def test_status_padrao_e_ativo(self):
-        asset = make_asset(self.user)
+        asset = make_asset(self.user, self.empresa)
         self.assertEqual(asset.status, Asset.Status.ACTIVE)
 
     def test_todos_os_tipos_validos(self):
@@ -59,17 +62,13 @@ class AssetModelTests(TestCase):
         self.assertIn('quebrado', status)
 
     def test_ordenacao_padrao_por_created_at_desc(self):
-        a1 = make_asset(self.user, name='Primeiro')
-        a2 = make_asset(self.user, name='Segundo')
-        assets = list(Asset.objects.filter(user=self.user))
-        self.assertEqual(assets[0], a2)  # mais recente primeiro
-
-    def test_empresa_pode_ser_nula(self):
-        asset = make_asset(self.user, empresa=None)
-        self.assertIsNone(asset.empresa)
+        a1 = make_asset(self.user, self.empresa, name='Primeiro')
+        a2 = make_asset(self.user, self.empresa, name='Segundo')
+        assets = list(Asset.objects.filter(empresa=self.empresa))
+        self.assertEqual(assets[0], a2)
 
     def test_purchase_date_pode_ser_nulo(self):
-        asset = make_asset(self.user, purchase_date=None)
+        asset = make_asset(self.user, self.empresa, purchase_date=None)
         self.assertIsNone(asset.purchase_date)
 
 
@@ -92,37 +91,41 @@ class AssetListViewTests(TestCase):
 
     def setUp(self):
         self.user = make_user()
+        self.empresa = make_empresa()
+        make_membro(self.user, self.empresa)
         self.client.force_login(self.user)
         self.url = reverse('asset_list')
 
     def test_retorna_200(self):
         self.assertEqual(self.client.get(self.url).status_code, 200)
 
-    def test_exibe_apenas_assets_do_usuario(self):
-        outro = make_user('outro')
-        make_asset(self.user, name='Meu Bem')
-        make_asset(outro, name='Bem do Outro')
+    def test_exibe_apenas_assets_da_empresa(self):
+        """Deve exibir apenas assets da empresa do usuário logado."""
+        outra = make_empresa('Outra')
+        outro_user = make_user('outro')
+        make_asset(self.user, self.empresa, name='Meu Bem')
+        make_asset(outro_user, outra, name='Bem da Outra')
         resp = self.client.get(self.url)
         self.assertContains(resp, 'Meu Bem')
-        self.assertNotContains(resp, 'Bem do Outro')
+        self.assertNotContains(resp, 'Bem da Outra')
 
     def test_filtro_por_nome(self):
-        make_asset(self.user, name='Corolla')
-        make_asset(self.user, name='Notebook')
+        make_asset(self.user, self.empresa, name='Corolla')
+        make_asset(self.user, self.empresa, name='Notebook')
         resp = self.client.get(self.url + '?q=corolla')
         self.assertContains(resp, 'Corolla')
         self.assertNotContains(resp, 'Notebook')
 
     def test_filtro_por_tipo(self):
-        make_asset(self.user, name='Carro', asset_type=Asset.AssetType.CAR)
-        make_asset(self.user, name='Note', asset_type=Asset.AssetType.IT)
+        make_asset(self.user, self.empresa, name='Carro', asset_type=Asset.AssetType.CAR)
+        make_asset(self.user, self.empresa, name='Note', asset_type=Asset.AssetType.IT)
         resp = self.client.get(self.url + '?asset_type=carro')
         self.assertContains(resp, 'Carro')
         self.assertNotContains(resp, 'Note')
 
     def test_filtro_por_status(self):
-        make_asset(self.user, name='BemAtivo', status=Asset.Status.ACTIVE)
-        make_asset(self.user, name='BemVendido', status=Asset.Status.SOLD)
+        make_asset(self.user, self.empresa, name='BemAtivo', status=Asset.Status.ACTIVE)
+        make_asset(self.user, self.empresa, name='BemVendido', status=Asset.Status.SOLD)
         resp = self.client.get(self.url + '?status=vendido')
         self.assertContains(resp, 'BemVendido')
         self.assertNotContains(resp, 'BemAtivo')
@@ -138,6 +141,8 @@ class AssetCreateViewTests(TestCase):
 
     def setUp(self):
         self.user = make_user()
+        self.empresa = make_empresa()
+        make_membro(self.user, self.empresa)
         self.client.force_login(self.user)
         self.url = reverse('asset_create')
 
@@ -145,25 +150,21 @@ class AssetCreateViewTests(TestCase):
         self.assertEqual(self.client.get(self.url).status_code, 200)
 
     def test_post_cria_asset_e_redireciona(self):
-        data = {
-            'name': 'Monitor LG',
-            'asset_type': 'ti',
-            'acquisition_value': '1200.00',
-            'status': 'ativo',
-            'location': '',
-            'notes': '',
-        }
-        resp = self.client.post(self.url, data)
+        resp = self.client.post(self.url, {
+            'name': 'Monitor LG', 'asset_type': 'ti',
+            'acquisition_value': '1200.00', 'status': 'ativo',
+            'location': '', 'notes': '',
+        })
         self.assertRedirects(resp, reverse('asset_list'))
-        self.assertTrue(Asset.objects.filter(name='Monitor LG', user=self.user).exists())
+        self.assertTrue(Asset.objects.filter(name='Monitor LG', empresa=self.empresa).exists())
 
-    def test_asset_criado_pertence_ao_usuario_logado(self):
+    def test_asset_criado_pertence_a_empresa(self):
         self.client.post(self.url, {
             'name': 'Impressora', 'asset_type': 'maquina',
             'acquisition_value': '800.00', 'status': 'ativo',
         })
         asset = Asset.objects.get(name='Impressora')
-        self.assertEqual(asset.user, self.user)
+        self.assertEqual(asset.empresa, self.empresa)
 
 
 # ── Views: asset_edit / asset_delete ──────────────────────────────────────────
@@ -172,10 +173,10 @@ class AssetEditDeleteTests(TestCase):
 
     def setUp(self):
         self.user = make_user()
-        empresa = make_empresa()
-        MembroEmpresa.objects.create(empresa=empresa, user=self.user, perfil='admin')
+        self.empresa = make_empresa()
+        make_membro(self.user, self.empresa, perfil='admin')
         self.client.force_login(self.user)
-        self.asset = make_asset(self.user)
+        self.asset = make_asset(self.user, self.empresa)
 
     def test_edit_get_retorna_200(self):
         resp = self.client.get(reverse('asset_edit', args=[self.asset.pk]))
@@ -194,9 +195,11 @@ class AssetEditDeleteTests(TestCase):
         self.client.post(reverse('asset_delete', args=[pk]))
         self.assertFalse(Asset.objects.filter(pk=pk).exists())
 
-    def test_nao_edita_asset_de_outro_usuario(self):
-        outro = make_user('outro')
-        asset_outro = make_asset(outro, name='Bem Alheio')
+    def test_nao_edita_asset_de_outra_empresa(self):
+        """Não deve permitir editar asset de outra empresa."""
+        outra = make_empresa('Outra')
+        outro_user = make_user('outro')
+        asset_outro = make_asset(outro_user, outra, name='Bem Alheio')
         resp = self.client.get(reverse('asset_edit', args=[asset_outro.pk]))
         self.assertEqual(resp.status_code, 404)
 
@@ -207,6 +210,8 @@ class DashboardViewTests(TestCase):
 
     def setUp(self):
         self.user = make_user()
+        self.empresa = make_empresa()
+        make_membro(self.user, self.empresa)
         self.client.force_login(self.user)
 
     def test_retorna_200(self):
@@ -217,16 +222,18 @@ class DashboardViewTests(TestCase):
         self.assertContains(resp, '0')
 
     def test_dashboard_soma_patrimonio_corretamente(self):
-        make_asset(self.user, acquisition_value=Decimal('1000.00'))
-        make_asset(self.user, acquisition_value=Decimal('2500.00'))
+        make_asset(self.user, self.empresa, acquisition_value=Decimal('1000.00'))
+        make_asset(self.user, self.empresa, acquisition_value=Decimal('2500.00'))
         resp = self.client.get(reverse('dashboard'))
         self.assertEqual(resp.status_code, 200)
         self.assertIn('patrimonio', resp.context)
         self.assertEqual(resp.context['patrimonio'], Decimal('3500.00'))
 
-    def test_dashboard_nao_soma_assets_de_outro_usuario(self):
-        outro = make_user('outro')
-        make_asset(outro, acquisition_value=Decimal('99999.00'))
-        make_asset(self.user, acquisition_value=Decimal('100.00'))
+    def test_dashboard_nao_soma_assets_de_outra_empresa(self):
+        """Dashboard não deve incluir patrimônio de outra empresa."""
+        outra = make_empresa('Outra')
+        outro_user = make_user('outro')
+        make_asset(outro_user, outra, acquisition_value=Decimal('99999.00'))
+        make_asset(self.user, self.empresa, acquisition_value=Decimal('100.00'))
         resp = self.client.get(reverse('dashboard'))
         self.assertEqual(resp.context['patrimonio'], Decimal('100.00'))

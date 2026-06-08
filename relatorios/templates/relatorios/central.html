@@ -3,9 +3,6 @@
 
 {% block extra_styles %}
 .rel-card{background:white;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.08);overflow:hidden;}
-.rel-header{background:linear-gradient(135deg,#0f0c29,#4f46e5);padding:1.5rem;color:white;}
-.rel-header h1{font-size:1.4rem;font-weight:700;margin-bottom:.25rem;}
-.rel-header p{font-size:.88rem;opacity:.8;}
 
 .tabs{display:flex;gap:0;border-bottom:2px solid #e2e8f0;padding:0 1.5rem;background:#f8fafc;}
 .tab-btn{padding:.85rem 1.5rem;background:none;border:none;font-size:.9rem;font-weight:600;
@@ -43,11 +40,8 @@
 {% endblock %}
 
 {% block content %}
+<h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;margin-bottom:1.25rem;">📊 Central de Relatórios</h1>
 <div class="rel-card">
-  <div class="rel-header">
-    <h1>📊 Central de Relatórios</h1>
-    <p>Selecione o módulo, configure os filtros e exporte em PDF ou Excel</p>
-  </div>
 
   <!-- Abas -->
   <div class="tabs">

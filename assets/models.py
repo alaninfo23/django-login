@@ -26,7 +26,7 @@ class Asset(models.Model):
         BROKEN  = 'quebrado', 'Quebrado'
 
     user             = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='assets')
-    empresa          = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='assets', null=True)
+    empresa          = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='assets')
     name             = models.CharField(max_length=200)
     asset_type       = models.CharField(max_length=20, choices=AssetType.choices)
     acquisition_value = models.DecimalField(max_digits=14, decimal_places=2)
