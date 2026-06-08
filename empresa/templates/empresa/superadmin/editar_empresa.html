@@ -1,0 +1,42 @@
+{% extends "assets/base.html" %}
+{% block title %}Editar Empresa{% endblock %}
+{% block extra_styles %}
+.form-card{background:white;padding:1.5rem;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);max-width:520px;margin:0 auto;}
+.field{margin-bottom:1.1rem;}
+.field label{display:block;font-size:.875rem;font-weight:600;margin-bottom:.3rem;color:#334155;}
+.field input[type=text],.field input[type=file]{width:100%;padding:.65rem .8rem;border:1px solid #e2e8f0;border-radius:7px;font-size:1rem;}
+.field input[type=text]:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.logo-preview{width:80px;height:80px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;margin-bottom:.5rem;background:#f8fafc;padding:4px;}
+.form-actions{display:flex;gap:.75rem;margin-top:1.5rem;}
+.form-actions .btn{flex:1;justify-content:center;}
+{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+  <a href="{% url 'superadmin_empresa_detalhe' empresa.pk %}" class="btn btn-outline" style="padding:.35rem .75rem;font-size:.82rem;">← Voltar</a>
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">✏️ Editar — {{ empresa.nome }}</h1>
+</div>
+<div class="form-card">
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="field">
+      <label>Nome da Empresa</label>
+      <input type="text" name="nome" value="{{ empresa.nome }}" required>
+    </div>
+    <div class="field">
+      <label>Logo</label>
+      {% if empresa.logo %}
+        <div><img src="{{ empresa.logo.url }}" alt="Logo atual" class="logo-preview"></div>
+        <label style="display:flex;align-items:center;gap:.4rem;font-weight:400;font-size:.85rem;color:#64748b;margin-bottom:.5rem;cursor:pointer;">
+          <input type="checkbox" name="remover_logo" value="1"> Remover logo atual
+        </label>
+      {% endif %}
+      <input type="file" name="logo" accept="image/*">
+      <span style="font-size:.78rem;color:#94a3b8;display:block;margin-top:.25rem;">Deixe vazio para manter a logo atual.</span>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Salvar</button>
+      <a href="{% url 'superadmin_empresa_detalhe' empresa.pk %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

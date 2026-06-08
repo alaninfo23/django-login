@@ -1,0 +1,154 @@
+{% extends "assets/base.html" %}
+{% block title %}Dashboard Frota{% endblock %}
+{% block extra_styles %}
+.grid-alertas{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.alerta{border-radius:10px;padding:1rem 1.25rem;}
+.alerta-danger{background:#fef2f2;border:1px solid #fecaca;}
+.alerta-warn{background:#fffbeb;border:1px solid #fde68a;}
+.alerta-info{background:#eff6ff;border:1px solid #bfdbfe;}
+.alerta h3{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.6rem;}
+.alerta-danger h3{color:#991b1b;}
+.alerta-warn h3{color:#92400e;}
+.alerta-info h3{color:#1e40af;}
+.alerta ul{list-style:none;padding:0;margin:0;}
+.alerta li{font-size:.88rem;padding:.25rem 0;border-bottom:1px solid rgba(0,0,0,.06);color:#334155;}
+.alerta li:last-child{border:none;}
+.alerta .vazio{color:#94a3b8;font-style:italic;font-size:.85rem;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.88rem;}
+th{background:#f8fafc;padding:.65rem 1rem;text-align:left;font-weight:600;color:#475569;border-bottom:2px solid #e2e8f0;white-space:nowrap;}
+td{padding:.65rem 1rem;border-bottom:1px solid #f1f5f9;color:#334155;}
+tr:hover td{background:#fafafa;}
+.badge{display:inline-block;padding:.2rem .55rem;border-radius:20px;font-size:.75rem;font-weight:600;}
+.badge-ativo{background:#d1fae5;color:#065f46;}
+.badge-manutencao{background:#fef3c7;color:#92400e;}
+.badge-inativo{background:#fee2e2;color:#991b1b;}
+.badge-alerta{background:#fee2e2;color:#991b1b;}
+.num{font-weight:600;color:#1e293b;}
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">🚛 Dashboard Frota</h1>
+  <form method="get" style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+    <input type="date" name="de" value="{{ de }}" placeholder="De"
+           style="padding:.45rem .75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.9rem;">
+    <input type="date" name="ate" value="{{ ate }}" placeholder="Até"
+           style="padding:.45rem .75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.9rem;">
+    <button type="submit" class="btn btn-outline" style="padding:.45rem .9rem;">Filtrar</button>
+    {% if de or ate %}<a href="{% url 'frota_dashboard' %}" class="btn btn-secondary" style="padding:.45rem .9rem;">Limpar</a>{% endif %}
+  </form>
+</div>
+
+{# ── Alertas ────────────────────────────────────────────────────────────── #}
+{% with total_alertas=motoristas_cnh_vencida.count|add:motoristas_cnh_vencendo.count|add:manutencoes_vencidas.count|add:manutencoes_vencendo.count %}
+{% if total_alertas %}
+<div class="grid-alertas">
+
+  {% if motoristas_cnh_vencida %}
+  <div class="alerta alerta-danger">
+    <h3>⚠️ CNH Vencida ({{ motoristas_cnh_vencida.count }})</h3>
+    <ul>
+      {% for m in motoristas_cnh_vencida %}
+      <li>{{ m.nome }} — {{ m.cnh_validade|date:"d/m/Y" }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if motoristas_cnh_vencendo %}
+  <div class="alerta alerta-warn">
+    <h3>⏰ CNH Vencendo em 30 dias ({{ motoristas_cnh_vencendo.count }})</h3>
+    <ul>
+      {% for m in motoristas_cnh_vencendo %}
+      <li>{{ m.nome }} — {{ m.cnh_validade|date:"d/m/Y" }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if manutencoes_vencidas %}
+  <div class="alerta alerta-danger">
+    <h3>🔧 Manutenção Vencida ({{ manutencoes_vencidas.count }})</h3>
+    <ul>
+      {% for man in manutencoes_vencidas %}
+      <li>{{ man.veiculo.placa }} — {{ man.get_tipo_display }} — {{ man.data|date:"d/m/Y" }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  {% if manutencoes_vencendo %}
+  <div class="alerta alerta-warn">
+    <h3>⏰ Manutenção nos próximos 7 dias ({{ manutencoes_vencendo.count }})</h3>
+    <ul>
+      {% for man in manutencoes_vencendo %}
+      <li>{{ man.veiculo.placa }} — {{ man.get_tipo_display }} — {{ man.data|date:"d/m/Y" }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+</div>
+{% endif %}
+{% endwith %}
+
+{# ── Tabela de veículos ─────────────────────────────────────────────────── #}
+<div class="card" style="padding:0;">
+  {% if veiculos %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Veículo</th>
+          <th>Status</th>
+          <th style="text-align:right;">KM Atual</th>
+          <th style="text-align:right;">KM Rodados</th>
+          <th style="text-align:right;">Abastec.</th>
+          <th style="text-align:right;">Combustível</th>
+          <th style="text-align:right;">Manutenção</th>
+          <th style="text-align:right;">Viagens</th>
+          <th style="text-align:right;">Consumo Médio</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in veiculos %}
+        <tr>
+          <td>
+            <strong>{{ v.placa }}</strong><br>
+            <span style="font-size:.8rem;color:#64748b;">{{ v.marca }} {{ v.modelo }} ({{ v.ano }})</span>
+            {% if v.sem_movimentacao %}<br><span class="badge badge-alerta" style="margin-top:.2rem;">Sem mov. 30d</span>{% endif %}
+          </td>
+          <td><span class="badge badge-{{ v.status }}">{{ v.get_status_display }}</span></td>
+          <td style="text-align:right;" class="num">{{ v.km_atual|floatformat:0 }}</td>
+          <td style="text-align:right;" class="num">
+            {% if v.km_rodado_total %}{{ v.km_rodado_total|floatformat:0 }}{% else %}—{% endif %}
+          </td>
+          <td style="text-align:right;" class="num">{{ v.total_abastecimentos|default:"0" }}</td>
+          <td style="text-align:right;" class="num">
+            {% if v.gasto_combustivel %}R$ {{ v.gasto_combustivel|floatformat:2 }}{% else %}—{% endif %}
+          </td>
+          <td style="text-align:right;" class="num">
+            {% if v.gasto_manutencao %}R$ {{ v.gasto_manutencao|floatformat:2 }}{% else %}—{% endif %}
+          </td>
+          <td style="text-align:right;" class="num">{{ v.total_viagens|default:"0" }}</td>
+          <td style="text-align:right;" class="num">
+            {% if v.consumo_medio %}{{ v.consumo_medio }} km/L{% else %}—{% endif %}
+          </td>
+          <td>
+            <a href="{% url 'frota_veiculo_detalhe' v.pk %}" class="btn btn-outline" style="padding:.3rem .75rem;font-size:.8rem;white-space:nowrap;">Ver detalhes</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:3rem;color:#94a3b8;">
+    <div style="font-size:2.5rem;margin-bottom:.75rem;">🚛</div>
+    <p>Nenhum veículo cadastrado.</p>
+    <a href="{% url 'frota_veiculo_create' %}" class="btn btn-primary" style="margin-top:1rem;">Cadastrar primeiro veículo</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

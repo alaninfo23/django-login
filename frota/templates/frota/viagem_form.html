@@ -1,0 +1,121 @@
+{% extends "assets/base.html" %}
+{% block title %}{% if viagem %}Editar{% else %}Nova{% endif %} Viagem{% endblock %}
+{% block extra_styles %}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.field{display:flex;flex-direction:column;gap:.3rem;}
+.field-label{font-size:.875rem;font-weight:600;color:#334155;}
+.field-input{padding:.6rem .9rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.95rem;}
+.field-input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.15);}
+.full{grid-column:1/-1;}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">
+    {% if viagem %}✏️ Editar Viagem{% else %}🗺️ Nova Viagem{% endif %}
+  </h1>
+  <a href="{% url 'frota_viagens' %}" class="btn btn-secondary">← Voltar</a>
+</div>
+
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-grid">
+      <div class="field full">
+        <label class="field-label">Veículo *</label>
+        <select class="field-input" name="veiculo" required>
+          <option value="">Selecione...</option>
+          {% for v in veiculos %}
+          <option value="{{ v.pk }}" {% if viagem.veiculo_id == v.pk %}selected{% endif %}>{{ v.placa }} — {{ v.marca }} {{ v.modelo }}</option>
+          {% endfor %}
+        </select>
+        {% if erro_veiculo %}<span style="color:#dc2626;font-size:.82rem;">{{ erro_veiculo }}</span>{% endif %}
+      </div>
+      <div class="field full">
+        <label class="field-label">Motorista</label>
+        <select class="field-input" name="motorista">
+          <option value="">— Nenhum —</option>
+          {% for m in motoristas %}
+          <option value="{{ m.pk }}" {% if viagem.motorista_id == m.pk %}selected{% endif %}>{{ m.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Origem *</label>
+        <input class="field-input" name="origem" value="{{ viagem.origem|default:'' }}" required maxlength="200">
+      </div>
+      <div class="field">
+        <label class="field-label">Destino *</label>
+        <input class="field-input" name="destino" value="{{ viagem.destino|default:'' }}" required maxlength="200">
+      </div>
+      <div class="field">
+        <label class="field-label">Data/Hora Saída *</label>
+        <input class="field-input" type="datetime-local" name="saida"
+               value="{{ viagem.saida|date:'Y-m-d\TH:i'|default:'' }}" required>
+      </div>
+      <div class="field">
+        <label class="field-label">Data/Hora Retorno</label>
+        <input class="field-input" type="datetime-local" name="retorno"
+               value="{{ viagem.retorno|date:'Y-m-d\TH:i'|default:'' }}">
+      </div>
+      <div class="field">
+        <label class="field-label">KM Inicial *</label>
+        <input class="field-input {% if erro_km %}erro{% endif %}"
+               type="number" name="km_inicial"
+               value="{{ post.km_inicial|default:'' }}{% if not post and viagem %}{{ viagem.km_inicial }}{% endif %}" required min="0">
+      </div>
+      <div class="field">
+        <label class="field-label">KM Final</label>
+        <input class="field-input {% if erro_km %}erro{% endif %}"
+               type="number" name="km_final"
+               value="{{ post.km_final|default:'' }}{% if not post and viagem %}{{ viagem.km_final|default:'' }}{% endif %}" min="0">
+        {% if erro_km %}<span style="color:#dc2626;font-size:.8rem;grid-column:1/-1;">{{ erro_km }}</span>{% endif %}
+      </div>
+      <div class="field">
+        <label class="field-label">Status *</label>
+        <select class="field-input" name="status" required>
+          {% for s in status_choices %}
+          <option value="{{ s.value }}" {% if viagem.status == s.value %}selected{% endif %}>{{ s.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field full">
+        <label class="field-label">Observações</label>
+        <textarea class="field-input" name="observacoes" rows="2">{{ viagem.observacoes|default:'' }}</textarea>
+      </div>
+
+      <div class="field full" style="margin-top:.5rem;">
+        <span style="font-size:.8rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Ajudantes (opcional)</span>
+      </div>
+      <div class="field">
+        <label class="field-label">Ajudante 1 — Nome</label>
+        <input class="field-input" name="ajudante1_nome" maxlength="200" value="{{ viagem.ajudante1_nome|default:'' }}">
+      </div>
+      <div class="field">
+        <label class="field-label">Ajudante 1 — Telefone</label>
+        <input class="field-input" name="ajudante1_telefone" maxlength="20" value="{{ viagem.ajudante1_telefone|default:'' }}">
+      </div>
+      <div class="field">
+        <label class="field-label">Ajudante 2 — Nome</label>
+        <input class="field-input" name="ajudante2_nome" maxlength="200" value="{{ viagem.ajudante2_nome|default:'' }}">
+      </div>
+      <div class="field">
+        <label class="field-label">Ajudante 2 — Telefone</label>
+        <input class="field-input" name="ajudante2_telefone" maxlength="20" value="{{ viagem.ajudante2_telefone|default:'' }}">
+      </div>
+      <div class="field">
+        <label class="field-label">Ajudante 3 — Nome</label>
+        <input class="field-input" name="ajudante3_nome" maxlength="200" value="{{ viagem.ajudante3_nome|default:'' }}">
+      </div>
+      <div class="field">
+        <label class="field-label">Ajudante 3 — Telefone</label>
+        <input class="field-input" name="ajudante3_telefone" maxlength="20" value="{{ viagem.ajudante3_telefone|default:'' }}">
+      </div>
+    </div>
+    <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+      <button type="submit" class="btn btn-primary">💾 Salvar</button>
+      <a href="{% url 'frota_viagens' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

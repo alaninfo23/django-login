@@ -7,6 +7,7 @@ class Empresa(models.Model):
     slug        = models.SlugField(max_length=60, unique=True)
     criada_em   = models.DateTimeField(auto_now_add=True)
     ativa       = models.BooleanField(default=True)
+    logo        = models.ImageField(upload_to='logos/', blank=True, null=True)
 
     def __str__(self):
         return self.nome

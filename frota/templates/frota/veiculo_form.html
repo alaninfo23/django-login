@@ -1,0 +1,67 @@
+{% extends "assets/base.html" %}
+{% block title %}{% if veiculo %}Editar{% else %}Novo{% endif %} Veículo{% endblock %}
+{% block extra_styles %}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.field{display:flex;flex-direction:column;gap:.3rem;}
+.field-label{font-size:.875rem;font-weight:600;color:#334155;}
+.field-input{padding:.6rem .9rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.95rem;}
+.field-input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.15);}
+.full{grid-column:1/-1;}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">
+    {% if veiculo %}✏️ Editar Veículo{% else %}🚛 Novo Veículo{% endif %}
+  </h1>
+  <a href="{% url 'frota_veiculos' %}" class="btn btn-secondary">← Voltar</a>
+</div>
+
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-grid">
+      <div class="field">
+        <label class="field-label">Placa *</label>
+        <input class="field-input" name="placa" value="{{ veiculo.placa|default:'' }}" required maxlength="10" style="text-transform:uppercase;">
+      </div>
+      <div class="field">
+        <label class="field-label">Status *</label>
+        <select class="field-input" name="status" required>
+          {% for s in status_choices %}
+          <option value="{{ s.value }}" {% if veiculo.status == s.value %}selected{% endif %}>{{ s.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Marca *</label>
+        <input class="field-input" name="marca" value="{{ veiculo.marca|default:'' }}" required maxlength="100">
+      </div>
+      <div class="field">
+        <label class="field-label">Modelo *</label>
+        <input class="field-input" name="modelo" value="{{ veiculo.modelo|default:'' }}" required maxlength="100">
+      </div>
+      <div class="field">
+        <label class="field-label">Ano *</label>
+        <input class="field-input" type="number" name="ano" value="{{ veiculo.ano|default:'' }}" required min="1900" max="2100">
+      </div>
+      <div class="field">
+        <label class="field-label">KM Atual</label>
+        <input class="field-input" type="number" name="km_atual" value="{{ veiculo.km_atual|default:'0' }}" min="0">
+      </div>
+      <div class="field">
+        <label class="field-label">Capacidade de Carga (t) *</label>
+        <input class="field-input" type="number" name="capacidade_carga" value="{{ veiculo.capacidade_carga|default:'' }}" required step="0.01" min="0">
+      </div>
+      <div class="field full">
+        <label class="field-label">Observações</label>
+        <textarea class="field-input" name="observacoes" rows="3">{{ veiculo.observacoes|default:'' }}</textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+      <button type="submit" class="btn btn-primary">💾 Salvar</button>
+      <a href="{% url 'frota_veiculos' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

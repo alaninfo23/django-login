@@ -1,0 +1,14 @@
+{% extends "assets/base.html" %}
+{% block title %}Confirmar Exclusão{% endblock %}
+{% block content %}
+<div class="card" style="max-width:480px;margin:0 auto;text-align:center;padding:2.5rem;">
+  <div style="font-size:2.5rem;margin-bottom:1rem;">⚠️</div>
+  <h2 style="font-size:1.2rem;font-weight:700;color:#1e293b;margin-bottom:.75rem;">Confirmar exclusão</h2>
+  <p style="color:#64748b;margin-bottom:1.75rem;">Deseja remover <strong>{{ objeto }}</strong>? Esta ação não pode ser desfeita.</p>
+  <form method="post" style="display:flex;gap:.75rem;justify-content:center;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Excluir</button>
+    <a href="{% url cancelar_url %}" class="btn btn-secondary">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

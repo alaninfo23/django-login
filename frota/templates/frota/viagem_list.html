@@ -1,0 +1,134 @@
+{% extends "assets/base.html" %}
+{% block title %}Viagens{% endblock %}
+{% block extra_styles %}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.9rem;}
+th{background:#f8fafc;padding:.65rem 1rem;text-align:left;font-weight:600;color:#475569;border-bottom:2px solid #e2e8f0;}
+td{padding:.65rem 1rem;border-bottom:1px solid #f1f5f9;color:#334155;}
+tr:hover td{background:#fafafa;}
+tr.selected td{background:#eff6ff;}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:20px;font-size:.78rem;font-weight:600;}
+.badge-em_andamento{background:#dbeafe;color:#1e40af;}
+.badge-concluida{background:#d1fae5;color:#065f46;}
+.badge-cancelada{background:#fee2e2;color:#991b1b;}
+#bulk-bar{display:none;align-items:center;gap:.75rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;}
+#bulk-bar.visible{display:flex;}
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">🗺️ Viagens</h1>
+  <a href="{% url 'frota_viagem_create' %}" class="btn btn-primary">+ Nova Viagem</a>
+</div>
+
+<div class="card" style="margin-bottom:1rem;padding:.85rem 1rem;">
+  <form method="get" style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+    <select name="veiculo" style="padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.9rem;">
+      <option value="">Todos os veículos</option>
+      {% for v in veiculos %}
+      <option value="{{ v.pk }}" {% if veiculo_selecionado == v.pk|stringformat:'s' %}selected{% endif %}>{{ v.placa }} — {{ v.modelo }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" style="padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.9rem;">
+      <option value="">Todos os status</option>
+      {% for s in status_choices %}
+      <option value="{{ s.value }}" {% if status_selecionado == s.value %}selected{% endif %}>{{ s.label }}</option>
+      {% endfor %}
+    </select>
+    <input type="date" name="de" value="{{ de }}" style="padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.9rem;">
+    <input type="date" name="ate" value="{{ ate }}" style="padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.9rem;">
+    <button type="submit" class="btn btn-outline">Filtrar</button>
+    <a href="{% url 'frota_viagens' %}" class="btn btn-secondary">Limpar</a>
+  </form>
+</div>
+
+<form method="post" action="{% url 'frota_viagens_bulk_delete' %}" id="bulk-form">
+  {% csrf_token %}
+
+  <div id="bulk-bar">
+    <span id="bulk-count" style="font-size:.9rem;font-weight:600;color:#991b1b;"></span>
+    <button type="submit" class="btn btn-danger" style="padding:.4rem .9rem;"
+            onclick="return confirm('Excluir as viagens selecionadas?')">🗑 Excluir selecionados</button>
+    <button type="button" class="btn btn-secondary" style="padding:.4rem .9rem;" onclick="desmarcarTodos()">Cancelar</button>
+  </div>
+
+  <div class="card" style="padding:0;">
+    {% if page_obj %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:2rem;"><input type="checkbox" id="check-all" title="Marcar todos"></th>
+            <th>Saída</th><th>Placa</th><th>Marca / Modelo</th>
+            <th>Origem</th><th>Destino</th><th>Motorista</th><th>Ajudantes</th>
+            <th>KM Rodado</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in page_obj %}
+          <tr>
+            <td><input type="checkbox" name="ids" value="{{ v.pk }}" class="row-check"></td>
+            <td>{{ v.saida|date:"d/m/Y H:i" }}</td>
+            <td><strong>{{ v.veiculo.placa }}</strong></td>
+            <td>{{ v.veiculo.marca }} {{ v.veiculo.modelo }}</td>
+            <td>{{ v.origem }}</td>
+            <td>{{ v.destino }}</td>
+            <td>{{ v.motorista.nome|default:"—" }}</td>
+            <td style="font-size:.82rem;line-height:1.5;">
+              {% if v.ajudante1_nome %}{{ v.ajudante1_nome }}{% if v.ajudante1_telefone %} ({{ v.ajudante1_telefone }}){% endif %}<br>{% endif %}
+              {% if v.ajudante2_nome %}{{ v.ajudante2_nome }}{% if v.ajudante2_telefone %} ({{ v.ajudante2_telefone }}){% endif %}<br>{% endif %}
+              {% if v.ajudante3_nome %}{{ v.ajudante3_nome }}{% if v.ajudante3_telefone %} ({{ v.ajudante3_telefone }}){% endif %}{% endif %}
+              {% if not v.ajudante1_nome and not v.ajudante2_nome and not v.ajudante3_nome %}—{% endif %}
+            </td>
+            <td>{% if v.km_rodado %}{{ v.km_rodado }} km{% else %}—{% endif %}</td>
+            <td><span class="badge badge-{{ v.status }}">{{ v.get_status_display }}</span></td>
+            <td style="white-space:nowrap;">
+              <a href="{% url 'frota_viagem_edit' v.pk %}" class="btn btn-outline" style="padding:.3rem .75rem;font-size:.8rem;">Editar</a>
+              <a href="{% url 'frota_viagem_delete' v.pk %}" class="btn btn-danger" style="padding:.3rem .75rem;font-size:.8rem;">Excluir</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div style="display:flex;justify-content:center;gap:.5rem;padding:1rem;">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&de={{ de }}&ate={{ ate }}{% if veiculo_selecionado %}&veiculo={{ veiculo_selecionado }}{% endif %}{% if status_selecionado %}&status={{ status_selecionado }}{% endif %}" class="btn btn-outline">← Anterior</a>{% endif %}
+      <span style="padding:.5rem 1rem;font-size:.88rem;color:#64748b;">Pág. {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&de={{ de }}&ate={{ ate }}{% if veiculo_selecionado %}&veiculo={{ veiculo_selecionado }}{% endif %}{% if status_selecionado %}&status={{ status_selecionado }}{% endif %}" class="btn btn-outline">Próxima →</a>{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div style="text-align:center;padding:3rem;color:#94a3b8;">
+      <div style="font-size:2.5rem;margin-bottom:.75rem;">🗺️</div>
+      <p>Nenhuma viagem registrada.</p>
+      <a href="{% url 'frota_viagem_create' %}" class="btn btn-primary" style="margin-top:1rem;">Registrar viagem</a>
+    </div>
+    {% endif %}
+  </div>
+</form>
+
+<script>
+const checkAll = document.getElementById('check-all');
+const bulkBar  = document.getElementById('bulk-bar');
+const bulkCount = document.getElementById('bulk-count');
+
+function atualizarBarra() {
+  const marcados = document.querySelectorAll('.row-check:checked').length;
+  bulkBar.classList.toggle('visible', marcados > 0);
+  bulkCount.textContent = marcados + ' selecionada(s)';
+  checkAll.indeterminate = marcados > 0 && marcados < document.querySelectorAll('.row-check').length;
+  checkAll.checked = marcados > 0 && marcados === document.querySelectorAll('.row-check').length;
+}
+
+function desmarcarTodos() {
+  document.querySelectorAll('.row-check, #check-all').forEach(c => c.checked = false);
+  atualizarBarra();
+}
+
+checkAll.addEventListener('change', () => {
+  document.querySelectorAll('.row-check').forEach(c => c.checked = checkAll.checked);
+  atualizarBarra();
+});
+document.querySelectorAll('.row-check').forEach(c => c.addEventListener('change', atualizarBarra));
+</script>
+{% endblock %}

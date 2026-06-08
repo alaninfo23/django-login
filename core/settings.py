@@ -48,6 +48,8 @@ INSTALLED_APPS = [
     'accounts',
     'assets',
     'financeiro',
+    'frota',
+    'relatorios',
 ]
 
 MIDDLEWARE = [
@@ -105,6 +107,9 @@ LOGOUT_REDIRECT_URL = '/login/'
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Email

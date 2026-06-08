@@ -4,157 +4,44 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SGP - Login</title>
-    <link
-      rel="icon"
-      type="image/png"
-      href="{% static 'accounts/logo_pp.png' %}"
-    />
+    <title>SG - Login</title>
+    <link rel="icon" href="data:,">
     <style>
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      body {
-        font-family: 'Segoe UI', sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        background: url("{% static 'accounts/fundo_login.png' %}") center/cover
-          no-repeat;
-        padding: 1rem;
-      }
-      body::before {
-        content: '';
-        position: fixed;
-        inset: 0;
-        background: rgba(10, 15, 30, 0.55);
-        z-index: 0;
-      }
-      .card {
-        position: relative;
-        z-index: 1;
-        background: rgba(255, 255, 255, 0.97);
-        padding: 2.2rem 2rem;
-        border-radius: 14px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
-        width: 100%;
-        max-width: 370px;
-      }
-      .logo {
-        display: block;
-        width: 100%;
-        margin-bottom: 0.8rem;
-      }
-      .tagline {
-        text-align: center;
-        font-size: 0.78rem;
-        color: #6b7280;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        margin-bottom: 1.6rem;
-      }
-      .error-box {
-        background: #fef2f2;
-        border: 1px solid #fecaca;
-        color: #dc2626;
-        font-size: 0.85rem;
-        padding: 0.6rem 0.9rem;
-        border-radius: 6px;
-        margin-bottom: 1rem;
-      }
-      .field {
-        position: relative;
-        margin-bottom: 1rem;
-      }
-      .field input {
-        width: 100%;
-        padding: 0.65rem 0.9rem;
-        border: 1px solid #d1d5db;
-        border-radius: 7px;
-        font-size: 0.97rem;
-        transition:
-          border-color 0.2s,
-          box-shadow 0.2s;
-      }
-      .field input:focus {
-        outline: none;
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
-      }
-      .toggle-pw {
-        position: absolute;
-        right: 0.75rem;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: #9ca3af;
-        font-size: 1rem;
-        padding: 0;
-      }
-      button[type='submit'] {
-        width: 100%;
-        padding: 0.75rem;
-        background: linear-gradient(135deg, #4f46e5, #7c3aed);
-        color: white;
-        border: none;
-        border-radius: 7px;
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: opacity 0.2s;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 0.5rem;
-      }
-      button[type='submit']:hover {
-        opacity: 0.9;
-      }
-      button[type='submit']:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-      }
-      .spinner {
-        display: none;
-        width: 16px;
-        height: 16px;
-        border: 2px solid rgba(255, 255, 255, 0.4);
-        border-top-color: white;
-        border-radius: 50%;
-        animation: spin 0.7s linear infinite;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      .forgot {
-        display: block;
-        text-align: center;
-        margin-top: 1rem;
-        color: #6b7280;
-        font-size: 0.83rem;
-        text-decoration: none;
-      }
-      .forgot:hover {
-        color: #4f46e5;
-        text-decoration: underline;
-      }
+      *{box-sizing:border-box;margin:0;padding:0;}
+      body{font-family:'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;
+        min-height:100vh;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);padding:1rem;}
+      .card{background:rgba(255,255,255,.97);padding:2.2rem 2rem;border-radius:14px;
+        box-shadow:0 8px 32px rgba(0,0,0,.35);width:100%;max-width:370px;}
+      .brand{text-align:center;margin-bottom:1.6rem;}
+      .brand-icon{font-size:2.5rem;margin-bottom:.4rem;}
+      .brand-name{font-size:1.25rem;font-weight:700;color:#1e1b4b;letter-spacing:.01em;}
+      .brand-sub{font-size:.78rem;color:#6b7280;letter-spacing:.06em;text-transform:uppercase;margin-top:.2rem;}
+      .error-box{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;font-size:.85rem;
+        padding:.6rem .9rem;border-radius:6px;margin-bottom:1rem;}
+      .field{position:relative;margin-bottom:1rem;}
+      .field input{width:100%;padding:.65rem .9rem;border:1px solid #d1d5db;border-radius:7px;
+        font-size:.97rem;transition:border-color .2s,box-shadow .2s;}
+      .field input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.15);}
+      .toggle-pw{position:absolute;right:.75rem;top:50%;transform:translateY(-50%);
+        background:none;border:none;cursor:pointer;color:#9ca3af;font-size:1rem;padding:0;}
+      button[type=submit]{width:100%;padding:.75rem;background:linear-gradient(135deg,#4f46e5,#7c3aed);
+        color:white;border:none;border-radius:7px;font-size:1rem;font-weight:600;cursor:pointer;
+        transition:opacity .2s;display:flex;justify-content:center;align-items:center;gap:.5rem;}
+      button[type=submit]:hover{opacity:.9;}
+      button[type=submit]:disabled{opacity:.6;cursor:not-allowed;}
+      .spinner{display:none;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);
+        border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;}
+      @keyframes spin{to{transform:rotate(360deg);}}
+      .forgot{display:block;text-align:center;margin-top:1rem;color:#6b7280;font-size:.83rem;text-decoration:none;}
+      .forgot:hover{color:#4f46e5;text-decoration:underline;}
     </style>
   </head>
   <body>
-    <div class="card" style="background-color: #a1a1a1">
-      <img
-        src="{% static 'accounts/logo_pp.png' %}"
-        alt="Logo SGP"
-        class="logo"
-      />
-      <p class="tagline">Sistema de Gestão Picos Pĺast</p>
+    <div class="card">
+      <div class="brand">
+        <div class="brand-name">Sistema de Gestão</div>
+        <div class="brand-sub">Login</div>
+      </div>
       {% if error %}
       <div class="error-box">{{ error }}</div>
       {% endif %}

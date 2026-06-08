@@ -6,6 +6,7 @@ class DespesaForm(forms.ModelForm):
     class Meta:
         model = Despesa
         fields = ['data', 'centro_custo', 'subgrupo', 'descricao', 'valor', 'forma_pagamento', 'situacao']
+        widgets = {'data': forms.DateInput(attrs={'type': 'date', 'class': 'field-input'})}
 
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -27,6 +28,7 @@ class RepasseForm(forms.ModelForm):
     class Meta:
         model = Repasse
         fields = ['data', 'tipo', 'origem', 'destino', 'valor', 'descricao']
+        widgets = {'data': forms.DateInput(attrs={'type': 'date', 'class': 'field-input'})}
 
     def __init__(self, *args, empresa=None, **kwargs):
         super().__init__(*args, **kwargs)

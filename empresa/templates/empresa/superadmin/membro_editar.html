@@ -1,0 +1,42 @@
+{% extends "assets/base.html" %}
+{% block title %}Editar Membro{% endblock %}
+{% block extra_styles %}
+.form-card{background:white;padding:1.5rem;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);max-width:480px;margin:0 auto;}
+.field{margin-bottom:1.1rem;}
+.field label{display:block;font-size:.875rem;font-weight:600;margin-bottom:.3rem;color:#334155;}
+.field select{width:100%;padding:.65rem .8rem;border:1px solid #e2e8f0;border-radius:7px;font-size:1rem;}
+.field select:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.form-actions{display:flex;gap:.75rem;margin-top:1.5rem;}
+.form-actions .btn{flex:1;justify-content:center;}
+{% endblock %}
+{% block content %}
+<div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+  <a href="{% url 'superadmin_empresa_detalhe' membro.empresa_id %}" class="btn btn-outline" style="padding:.35rem .75rem;font-size:.82rem;">← Voltar</a>
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">✏️ {{ membro.user.username }}</h1>
+  <span style="font-size:.82rem;color:#94a3b8;">🏢 {{ membro.empresa.nome }}</span>
+</div>
+<div class="form-card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="field">
+      <label>Perfil</label>
+      <select name="perfil">
+        {% for val, label in perfis.choices %}
+        <option value="{{ val }}" {% if membro.perfil == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select name="ativo">
+        <option value="1" {% if membro.ativo %}selected{% endif %}>Ativo</option>
+        <option value="0" {% if not membro.ativo %}selected{% endif %}>Inativo</option>
+      </select>
+    </div>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Salvar</button>
+      <a href="{% url 'superadmin_empresa_detalhe' membro.empresa_id %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

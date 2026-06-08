@@ -33,6 +33,14 @@ def login_view(request):
                             username=request.POST.get('username', ''),
                             password=request.POST.get('password', ''))
         if user:
+            # Superusuário sempre entra, independente de empresa
+            if not user.is_superuser:
+                from empresa.models import MembroEmpresa
+                tem_empresa = MembroEmpresa.objects.filter(user=user).exists()
+                membro_ativo = MembroEmpresa.objects.filter(user=user, ativo=True, empresa__ativa=True).exists()
+                if tem_empresa and not membro_ativo:
+                    request.session['login_error'] = 'Usuário inativo. Favor contatar o administrador.'
+                    return redirect('login')
             request.session['login_attempts'] = 0
             login(request, user)
             return redirect(settings.LOGIN_REDIRECT_URL)

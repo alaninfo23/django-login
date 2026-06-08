@@ -57,28 +57,37 @@ def cadastros(request):
 @requer_empresa
 def despesa_list(request):
     qs = Despesa.objects.filter(empresa=request.empresa)
-    mes      = request.GET.get('mes', '')
+    hoje = date.today()
+    de       = request.GET.get('de', hoje.replace(month=hoje.month-1 if hoje.month > 1 else 12, year=hoje.year if hoje.month > 1 else hoje.year-1, day=1).isoformat())
+    ate      = request.GET.get('ate', hoje.isoformat())
     centro   = request.GET.get('centro', '').strip()
     subgrupo = request.GET.get('subgrupo', '').strip()
+    situacao = request.GET.get('situacao', '')
 
-    if mes:
-        try:
-            ano, m = mes.split('-')
-            qs = qs.filter(data__year=ano, data__month=m)
-        except ValueError:
-            pass
+    try:
+        from datetime import datetime
+        qs = qs.filter(data__range=(datetime.strptime(de, '%Y-%m-%d').date(),
+                                    datetime.strptime(ate, '%Y-%m-%d').date()))
+    except ValueError:
+        pass
     if centro:
-        qs = qs.filter(centro_custo__icontains=centro)
+        qs = qs.filter(centro_custo=centro)
     if subgrupo:
-        qs = qs.filter(subgrupo__icontains=subgrupo)
+        qs = qs.filter(subgrupo=subgrupo)
+    if situacao:
+        qs = qs.filter(situacao=situacao)
 
     total    = qs.aggregate(total=Sum('valor'))['total'] or 0
     paginator = Paginator(qs, 20)
     page     = paginator.get_page(request.GET.get('page'))
 
+    centros   = CentroCusto.objects.filter(empresa=request.empresa).values_list('nome', flat=True)
+    subgrupos = SubGrupo.objects.filter(empresa=request.empresa).values_list('nome', flat=True)
+
     return render(request, 'financeiro/despesa_list.html', {
         'page_obj': page, 'total': total,
-        'mes': mes, 'centro': centro, 'subgrupo': subgrupo,
+        'de': de, 'ate': ate, 'centro': centro, 'subgrupo': subgrupo, 'situacao': situacao,
+        'centros': centros, 'subgrupos': subgrupos, 'situacoes': Despesa.Situacao,
     })
 
 
@@ -98,6 +107,7 @@ def despesa_create(request):
 
 @login_required
 @requer_empresa
+@requer_admin
 def despesa_edit(request, pk):
     despesa = get_object_or_404(Despesa, pk=pk, empresa=request.empresa)
     form = DespesaForm(request.POST or None, instance=despesa, empresa=request.empresa)
@@ -110,6 +120,7 @@ def despesa_edit(request, pk):
 
 @login_required
 @requer_empresa
+@requer_admin
 def despesa_delete(request, pk):
     despesa = get_object_or_404(Despesa, pk=pk, empresa=request.empresa)
     if request.method == 'POST':
@@ -119,23 +130,56 @@ def despesa_delete(request, pk):
     return render(request, 'financeiro/despesa_confirm_delete.html', {'despesa': despesa})
 
 
+@login_required
+@requer_empresa
+@requer_admin
+def despesa_bulk_delete(request):
+    if request.method != 'POST':
+        return redirect('despesa_list')
+    ids = request.POST.getlist('ids')
+    if ids:
+        deleted, _ = Despesa.objects.filter(pk__in=ids, empresa=request.empresa).delete()
+        messages.success(request, f'{deleted} despesa(s) excluída(s).')
+    else:
+        messages.info(request, 'Nenhuma despesa selecionada.')
+    return redirect('despesa_list')
+
+
 # ── Repasses ───────────────────────────────────────────────────────────────────
 
 @login_required
 @requer_empresa
 def repasse_list(request):
-    qs  = Repasse.objects.filter(empresa=request.empresa)
-    mes = request.GET.get('mes', '')
-    if mes:
-        try:
-            ano, m = mes.split('-')
-            qs = qs.filter(data__year=ano, data__month=m)
-        except ValueError:
-            pass
+    qs      = Repasse.objects.filter(empresa=request.empresa)
+    hoje = date.today()
+    de      = request.GET.get('de', hoje.replace(month=hoje.month-1 if hoje.month > 1 else 12, year=hoje.year if hoje.month > 1 else hoje.year-1, day=1).isoformat())
+    ate     = request.GET.get('ate', hoje.isoformat())
+    tipo    = request.GET.get('tipo', '')
+    origem  = request.GET.get('origem', '').strip()
+    destino = request.GET.get('destino', '').strip()
+
+    try:
+        from datetime import datetime
+        qs = qs.filter(data__range=(datetime.strptime(de, '%Y-%m-%d').date(),
+                                    datetime.strptime(ate, '%Y-%m-%d').date()))
+    except ValueError:
+        pass
+    if tipo:
+        qs = qs.filter(tipo=tipo)
+    if origem:
+        qs = qs.filter(origem=origem)
+    if destino:
+        qs = qs.filter(destino=destino)
+
+    origens  = Repasse.objects.filter(empresa=request.empresa).values_list('origem', flat=True).distinct().order_by('origem')
+    destinos = Repasse.objects.filter(empresa=request.empresa).values_list('destino', flat=True).distinct().order_by('destino')
+
     paginator = Paginator(qs, 20)
     page = paginator.get_page(request.GET.get('page'))
     return render(request, 'financeiro/repasse_list.html', {
-        'page_obj': page, 'mes': mes, 'tipos': Repasse.Tipo,
+        'page_obj': page, 'de': de, 'ate': ate, 'tipo': tipo, 'origem': origem,
+        'destino': destino, 'tipos': Repasse.Tipo,
+        'origens': origens, 'destinos': destinos,
     })
 
 
@@ -155,6 +199,7 @@ def repasse_create(request):
 
 @login_required
 @requer_empresa
+@requer_admin
 def repasse_edit(request, pk):
     repasse = get_object_or_404(Repasse, pk=pk, empresa=request.empresa)
     form = RepasseForm(request.POST or None, instance=repasse, empresa=request.empresa)
@@ -167,6 +212,7 @@ def repasse_edit(request, pk):
 
 @login_required
 @requer_empresa
+@requer_admin
 def repasse_delete(request, pk):
     repasse = get_object_or_404(Repasse, pk=pk, empresa=request.empresa)
     if request.method == 'POST':
@@ -174,6 +220,21 @@ def repasse_delete(request, pk):
         messages.success(request, 'Repasse excluído.')
         return redirect('repasse_list')
     return render(request, 'financeiro/repasse_confirm_delete.html', {'repasse': repasse})
+
+
+@login_required
+@requer_empresa
+@requer_admin
+def repasse_bulk_delete(request):
+    if request.method != 'POST':
+        return redirect('repasse_list')
+    ids = request.POST.getlist('ids')
+    if ids:
+        deleted, _ = Repasse.objects.filter(pk__in=ids, empresa=request.empresa).delete()
+        messages.success(request, f'{deleted} repasse(s) excluído(s).')
+    else:
+        messages.info(request, 'Nenhum repasse selecionado.')
+    return redirect('repasse_list')
 
 
 # ── Dashboard ──────────────────────────────────────────────────────────────────

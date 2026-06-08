@@ -1,0 +1,174 @@
+{% extends "assets/base.html" %}
+{% block title %}{{ veiculo.placa }} — Detalhes{% endblock %}
+{% block extra_styles %}
+.grid-indicadores{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.indicador{background:white;border:1px solid #e2e8f0;border-radius:10px;padding:1rem 1.25rem;text-align:center;}
+.indicador .valor{font-size:1.4rem;font-weight:700;color:#1e293b;margin-bottom:.2rem;}
+.indicador .label{font-size:.75rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;}
+.indicador.alerta{border-color:#fca5a5;background:#fef2f2;}
+.indicador.alerta .valor{color:#991b1b;}
+.indicador.warn{border-color:#fde68a;background:#fffbeb;}
+.indicador.warn .valor{color:#92400e;}
+.secao{margin-bottom:1.5rem;}
+.secao h2{font-size:1rem;font-weight:700;color:#1e293b;margin-bottom:.75rem;padding-bottom:.4rem;border-bottom:2px solid #e2e8f0;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.87rem;}
+th{background:#f8fafc;padding:.55rem 1rem;text-align:left;font-weight:600;color:#475569;border-bottom:2px solid #e2e8f0;white-space:nowrap;}
+td{padding:.55rem 1rem;border-bottom:1px solid #f1f5f9;color:#334155;}
+tr:hover td{background:#fafafa;}
+.badge{display:inline-block;padding:.2rem .55rem;border-radius:20px;font-size:.75rem;font-weight:600;}
+.badge-ativo{background:#d1fae5;color:#065f46;}
+.badge-manutencao{background:#fef3c7;color:#92400e;}
+.badge-inativo{background:#fee2e2;color:#991b1b;}
+.badge-concluida{background:#d1fae5;color:#065f46;}
+.badge-em_andamento{background:#dbeafe;color:#1e40af;}
+.badge-cancelada{background:#f1f5f9;color:#64748b;}
+.vazio{text-align:center;padding:2rem;color:#94a3b8;font-style:italic;}
+{% endblock %}
+{% block content %}
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem;">
+  <div>
+    <a href="{% url 'frota_dashboard' %}" style="font-size:.85rem;color:#64748b;text-decoration:none;">← Dashboard Frota</a>
+    <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;margin-top:.2rem;">
+      🚛 {{ veiculo.placa }}
+      <span style="font-size:.95rem;font-weight:400;color:#64748b;">— {{ veiculo.marca }} {{ veiculo.modelo }} ({{ veiculo.ano }})</span>
+    </h1>
+  </div>
+  <div style="display:flex;gap:.5rem;">
+    <a href="{% url 'frota_veiculo_edit' veiculo.pk %}" class="btn btn-outline" style="padding:.4rem .9rem;font-size:.85rem;">Editar Veículo</a>
+  </div>
+</div>
+
+{# ── Indicadores ────────────────────────────────────────────────────────── #}
+<div class="grid-indicadores">
+
+  <div class="indicador">
+    <div class="valor">{{ veiculo.km_atual|floatformat:0 }}</div>
+    <div class="label">KM Atual</div>
+  </div>
+
+  <div class="indicador">
+    <div class="valor">{% if km_rodado_total %}{{ km_rodado_total|floatformat:0 }}{% else %}—{% endif %}</div>
+    <div class="label">KM Rodados</div>
+  </div>
+
+  <div class="indicador">
+    <div class="valor">{% if consumo_medio %}{{ consumo_medio }}{% else %}—{% endif %}</div>
+    <div class="label">km/L Consumo Médio</div>
+  </div>
+
+  <div class="indicador">
+    <div class="valor">{{ totais.total_abastecimentos|default:"0" }}</div>
+    <div class="label">Abastecimentos</div>
+  </div>
+
+  <div class="indicador">
+    <div class="valor">{% if totais.gasto_combustivel %}R$ {{ totais.gasto_combustivel|floatformat:2 }}{% else %}—{% endif %}</div>
+    <div class="label">Gasto Combustível</div>
+  </div>
+
+  <div class="indicador {% if revisao_vencida %}alerta{% endif %}">
+    <div class="valor">{% if totais.gasto_manutencao %}R$ {{ totais.gasto_manutencao|floatformat:2 }}{% else %}—{% endif %}</div>
+    <div class="label">Gasto Manutenção</div>
+  </div>
+
+  <div class="indicador">
+    <div class="valor">{{ totais.total_viagens|default:"0" }}</div>
+    <div class="label">Viagens</div>
+  </div>
+
+  <div class="indicador {% if revisao_vencida %}alerta{% endif %}">
+    <div class="valor">{% if proxima_revisao %}{{ proxima_revisao|date:"d/m/Y" }}{% else %}—{% endif %}</div>
+    <div class="label">{% if revisao_vencida %}⚠️ Revisão Vencida{% else %}Próxima Revisão{% endif %}</div>
+  </div>
+
+</div>
+
+{# ── Últimos abastecimentos ─────────────────────────────────────────────── #}
+<div class="card secao" style="padding:1.25rem;">
+  <h2>⛽ Últimos Abastecimentos</h2>
+  {% if abastecimentos %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Data</th><th style="text-align:right;">KM</th><th style="text-align:right;">Litros</th><th style="text-align:right;">Valor Total</th><th style="text-align:right;">R$/L</th><th>Posto</th></tr>
+      </thead>
+      <tbody>
+        {% for ab in abastecimentos %}
+        <tr>
+          <td>{{ ab.data|date:"d/m/Y" }}</td>
+          <td style="text-align:right;">{{ ab.km_atual|floatformat:0 }}</td>
+          <td style="text-align:right;">{{ ab.litros|floatformat:2 }}</td>
+          <td style="text-align:right;">R$ {{ ab.valor_total|floatformat:2 }}</td>
+          <td style="text-align:right;">{% if ab.valor_por_litro %}{{ ab.valor_por_litro }}{% else %}—{% endif %}</td>
+          <td>{{ ab.posto|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="vazio">Nenhum abastecimento registrado.</p>
+  {% endif %}
+</div>
+
+{# ── Últimas manutenções ────────────────────────────────────────────────── #}
+<div class="card secao" style="padding:1.25rem;">
+  <h2>🔧 Últimas Manutenções</h2>
+  {% if manutencoes %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Data</th><th>Tipo</th><th>Descrição</th><th>Oficina</th><th style="text-align:right;">KM</th><th style="text-align:right;">Valor</th><th>Próxima Revisão</th></tr>
+      </thead>
+      <tbody>
+        {% for man in manutencoes %}
+        <tr>
+          <td style="white-space:nowrap;">{{ man.data|date:"d/m/Y" }}</td>
+          <td>{{ man.get_tipo_display }}</td>
+          <td>{{ man.descricao }}</td>
+          <td>{{ man.oficina|default:"—" }}</td>
+          <td style="text-align:right;">{{ man.km_manutencao|floatformat:0 }}</td>
+          <td style="text-align:right;">R$ {{ man.valor|floatformat:2 }}</td>
+          <td style="white-space:nowrap;">{{ man.proxima_revisao|date:"d/m/Y"|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="vazio">Nenhuma manutenção registrada.</p>
+  {% endif %}
+</div>
+
+{# ── Últimas viagens ────────────────────────────────────────────────────── #}
+<div class="card secao" style="padding:1.25rem;">
+  <h2>🗺️ Últimas Viagens</h2>
+  {% if viagens %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Saída</th><th>Origem → Destino</th><th>Motorista</th><th style="text-align:right;">KM Ini</th><th style="text-align:right;">KM Fim</th><th style="text-align:right;">KM Rod.</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for vi in viagens %}
+        <tr>
+          <td style="white-space:nowrap;">{{ vi.saida|date:"d/m/Y" }}</td>
+          <td>{{ vi.origem }} → {{ vi.destino }}</td>
+          <td>{{ vi.motorista.nome|default:"—" }}</td>
+          <td style="text-align:right;">{{ vi.km_inicial|floatformat:0 }}</td>
+          <td style="text-align:right;">{{ vi.km_final|floatformat:0|default:"—" }}</td>
+          <td style="text-align:right;">{% if vi.km_rodado %}{{ vi.km_rodado|floatformat:0 }}{% else %}—{% endif %}</td>
+          <td><span class="badge badge-{{ vi.status }}">{{ vi.get_status_display }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="vazio">Nenhuma viagem registrada.</p>
+  {% endif %}
+</div>
+
+{% endblock %}

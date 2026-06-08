@@ -1,0 +1,128 @@
+{% extends "assets/base.html" %}
+{% block title %}{% if man %}Editar{% else %}Nova{% endif %} Manutenção{% endblock %}
+{% block extra_styles %}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.field{display:flex;flex-direction:column;gap:.3rem;}
+.field-label{font-size:.875rem;font-weight:600;color:#334155;}
+.field-input{padding:.6rem .9rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.95rem;}
+.field-input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.15);}
+.full{grid-column:1/-1;}
+.status-tabs{display:flex;gap:.5rem;margin-bottom:1.25rem;}
+.status-tab{padding:.5rem 1.25rem;border-radius:7px;border:2px solid #e2e8f0;cursor:pointer;font-weight:600;font-size:.9rem;background:white;transition:all .15s;}
+.status-tab.selected-agendada{border-color:#f59e0b;background:#fffbeb;color:#92400e;}
+.status-tab.selected-realizada{border-color:#10b981;background:#d1fae5;color:#065f46;}
+#campos-realizada{transition:opacity .15s;}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">
+    {% if man %}✏️ Editar Manutenção{% else %}🔧 Nova Manutenção{% endif %}
+  </h1>
+  <a href="{% url 'frota_manutencoes' %}" class="btn btn-secondary">← Voltar</a>
+</div>
+
+<div class="card">
+  <form method="post" id="form-manutencao">
+    {% csrf_token %}
+
+    {# ── Status ── #}
+    <div class="field" style="margin-bottom:1.25rem;">
+      <label class="field-label">Status *</label>
+      <div class="status-tabs">
+        <label>
+          <input type="radio" name="status" value="agendada" id="rb-agendada"
+            {% if man.status == 'agendada' %}checked{% endif %} style="display:none;">
+          <span class="status-tab" id="tab-agendada">📅 Agendada</span>
+        </label>
+        <label>
+          <input type="radio" name="status" value="realizada" id="rb-realizada"
+            {% if not man or man.status == 'realizada' %}checked{% endif %} style="display:none;">
+          <span class="status-tab" id="tab-realizada">✅ Realizada</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="field full">
+        <label class="field-label">Veículo *</label>
+        <select class="field-input" name="veiculo" required>
+          <option value="">Selecione...</option>
+          {% for v in veiculos %}
+          <option value="{{ v.pk }}" {% if man.veiculo_id == v.pk %}selected{% endif %}>{{ v.placa }} — {{ v.marca }} {{ v.modelo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Tipo *</label>
+        <select class="field-input" name="tipo" required>
+          {% for t in tipo_choices %}
+          <option value="{{ t.value }}" {% if man.tipo == t.value %}selected{% endif %}>{{ t.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" id="label-data">Data *</label>
+        <input class="field-input" type="date" name="data" value="{{ man.data|date:'Y-m-d'|default:'' }}" required>
+      </div>
+      <div class="field full">
+        <label class="field-label">Descrição *</label>
+        <input class="field-input" name="descricao" value="{{ man.descricao|default:'' }}" required maxlength="500">
+      </div>
+
+      {# campos só relevantes para realizada #}
+      <div class="field" id="campos-realizada">
+        <label class="field-label">Oficina</label>
+        <input class="field-input" name="oficina" value="{{ man.oficina|default:'' }}" maxlength="200">
+      </div>
+      <div class="field" id="campo-valor">
+        <label class="field-label">Valor (R$)</label>
+        <input class="field-input" type="number" name="valor" value="{{ man.valor|default:'' }}" step="0.01" min="0">
+      </div>
+      <div class="field" id="campo-km">
+        <label class="field-label">KM na Manutenção</label>
+        <input class="field-input" type="number" name="km_manutencao" value="{{ man.km_manutencao|default:'' }}" min="0">
+      </div>
+      <div class="field">
+        <label class="field-label">Próxima Revisão</label>
+        <input class="field-input" type="date" name="proxima_revisao" value="{{ man.proxima_revisao|date:'Y-m-d'|default:'' }}">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+      <button type="submit" class="btn btn-primary">💾 Salvar</button>
+      <a href="{% url 'frota_manutencoes' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+
+<script>
+(function(){
+  const rbA = document.getElementById('rb-agendada');
+  const rbR = document.getElementById('rb-realizada');
+  const tabA = document.getElementById('tab-agendada');
+  const tabR = document.getElementById('tab-realizada');
+  const camposExtra = ['campos-realizada','campo-valor','campo-km'];
+  const labelData = document.getElementById('label-data');
+
+  function atualizar(){
+    const agendada = rbA.checked;
+    tabA.className = 'status-tab' + (agendada ? ' selected-agendada' : '');
+    tabR.className = 'status-tab' + (!agendada ? ' selected-realizada' : '');
+    camposExtra.forEach(id => {
+      document.getElementById(id).style.opacity = agendada ? '.4' : '1';
+    });
+    labelData.textContent = agendada ? 'Data Prevista *' : 'Data *';
+  }
+
+  rbA.addEventListener('change', atualizar);
+  rbR.addEventListener('change', atualizar);
+
+  // clique nas tabs visuais
+  tabA.parentElement.addEventListener('click', ()=>{ rbA.checked=true; atualizar(); });
+  tabR.parentElement.addEventListener('click', ()=>{ rbR.checked=true; atualizar(); });
+
+  atualizar();
+})();
+</script>
+{% endblock %}

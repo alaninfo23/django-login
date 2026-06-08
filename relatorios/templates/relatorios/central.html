@@ -1,0 +1,252 @@
+{% extends "assets/base.html" %}
+{% block title %}Relatórios{% endblock %}
+
+{% block extra_styles %}
+.rel-card{background:white;border-radius:12px;box-shadow:0 1px 6px rgba(0,0,0,.08);overflow:hidden;}
+.rel-header{background:linear-gradient(135deg,#0f0c29,#4f46e5);padding:1.5rem;color:white;}
+.rel-header h1{font-size:1.4rem;font-weight:700;margin-bottom:.25rem;}
+.rel-header p{font-size:.88rem;opacity:.8;}
+
+.tabs{display:flex;gap:0;border-bottom:2px solid #e2e8f0;padding:0 1.5rem;background:#f8fafc;}
+.tab-btn{padding:.85rem 1.5rem;background:none;border:none;font-size:.9rem;font-weight:600;
+  color:#64748b;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;
+  transition:color .15s,border-color .15s;display:flex;align-items:center;gap:.4rem;}
+.tab-btn:hover{color:#4f46e5;}
+.tab-btn.active{color:#4f46e5;border-bottom-color:#4f46e5;}
+
+.tab-panel{display:none;padding:1.5rem;}
+.tab-panel.active{display:block;}
+
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem;}
+.field label{display:block;font-size:.8rem;font-weight:600;color:#64748b;margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.04em;}
+.field input,.field select{width:100%;padding:.55rem .8rem;border:1px solid #d1d5db;border-radius:7px;
+  font-size:.9rem;color:#1e293b;background:white;outline:none;}
+.field input:focus,.field select:focus{border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+
+.export-btns{display:flex;gap:.75rem;flex-wrap:wrap;}
+.btn-pdf{background:linear-gradient(135deg,#dc2626,#b91c1c);color:white;padding:.6rem 1.4rem;
+  border-radius:7px;border:none;cursor:pointer;font-size:.9rem;font-weight:600;
+  display:inline-flex;align-items:center;gap:.4rem;text-decoration:none;transition:opacity .15s;}
+.btn-pdf:hover{opacity:.88;}
+.btn-excel{background:linear-gradient(135deg,#16a34a,#15803d);color:white;padding:.6rem 1.4rem;
+  border-radius:7px;border:none;cursor:pointer;font-size:.9rem;font-weight:600;
+  display:inline-flex;align-items:center;gap:.4rem;text-decoration:none;transition:opacity .15s;}
+.btn-excel:hover{opacity:.88;}
+
+.periodo-row{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:480px){
+  .periodo-row{grid-template-columns:1fr;}
+  .export-btns{flex-direction:column;}
+  .tabs{overflow-x:auto;}
+  .tab-btn{white-space:nowrap;}
+}
+{% endblock %}
+
+{% block content %}
+<div class="rel-card">
+  <div class="rel-header">
+    <h1>📊 Central de Relatórios</h1>
+    <p>Selecione o módulo, configure os filtros e exporte em PDF ou Excel</p>
+  </div>
+
+  <!-- Abas -->
+  <div class="tabs">
+    <button class="tab-btn {% if modulo == 'patrimonial' %}active{% endif %}" data-tab="patrimonial">
+      🏛️ Patrimonial
+    </button>
+    <button class="tab-btn {% if modulo == 'financeiro' %}active{% endif %}" data-tab="financeiro">
+      💼 Financeiro
+    </button>
+    <button class="tab-btn {% if modulo == 'frotas' %}active{% endif %}" data-tab="frotas">
+      🚛 Frotas
+    </button>
+  </div>
+
+  <!-- ── ABA PATRIMONIAL ─────────────────────────────────── -->
+  <div class="tab-panel {% if modulo == 'patrimonial' %}active{% endif %}" id="tab-patrimonial">
+    <div class="filters">
+      <div class="periodo-row">
+        <div class="field">
+          <label>De</label>
+          <input type="date" id="pat-de" value="{{ de }}">
+        </div>
+        <div class="field">
+          <label>Até</label>
+          <input type="date" id="pat-ate" value="{{ ate }}">
+        </div>
+      </div>
+      <div class="field">
+        <label>Tipo de Bem</label>
+        <select id="pat-tipo">
+          <option value="">Todos</option>
+          {% for val, label in asset_types %}
+          <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="pat-status">
+          <option value="">Todos</option>
+          {% for val, label in asset_statuses %}
+          <option value="{{ val }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="export-btns">
+      <a id="pat-pdf-btn" href="#" class="btn-pdf">📄 Exportar PDF</a>
+      <a id="pat-excel-btn" href="#" class="btn-excel">📊 Exportar Excel</a>
+    </div>
+  </div>
+
+  <!-- ── ABA FINANCEIRO ──────────────────────────────────── -->
+  <div class="tab-panel {% if modulo == 'financeiro' %}active{% endif %}" id="tab-financeiro">
+    <div class="filters">
+      <div class="periodo-row">
+        <div class="field">
+          <label>De</label>
+          <input type="date" id="fin-de" value="{{ de }}">
+        </div>
+        <div class="field">
+          <label>Até</label>
+          <input type="date" id="fin-ate" value="{{ ate }}">
+        </div>
+      </div>
+      <div class="field">
+        <label>Tipo</label>
+        <select id="fin-subtipo">
+          <option value="despesas">Despesas</option>
+          <option value="repasses">Repasses</option>
+          <option value="ambos">Despesas + Repasses</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Centro de Custo</label>
+        <select id="fin-centro">
+          <option value="">Todos</option>
+          {% for c in centros %}
+          <option value="{{ c }}">{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>SubGrupo</label>
+        <select id="fin-subgrupo">
+          <option value="">Todos</option>
+          {% for s in subgrupos %}
+          <option value="{{ s }}">{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label>Forma de Pagamento</label>
+        <select id="fin-forma">
+          <option value="">Todas</option>
+          {% for f in formas %}
+          <option value="{{ f }}">{{ f }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="export-btns">
+      <a id="fin-pdf-btn" href="#" class="btn-pdf">📄 Exportar PDF</a>
+      <a id="fin-excel-btn" href="#" class="btn-excel">📊 Exportar Excel</a>
+    </div>
+  </div>
+
+  <!-- ── ABA FROTAS ──────────────────────────────────────── -->
+  <div class="tab-panel {% if modulo == 'frotas' %}active{% endif %}" id="tab-frotas">
+    <div class="filters">
+      <div class="periodo-row">
+        <div class="field">
+          <label>De</label>
+          <input type="date" id="frt-de" value="{{ de }}">
+        </div>
+        <div class="field">
+          <label>Até</label>
+          <input type="date" id="frt-ate" value="{{ ate }}">
+        </div>
+      </div>
+    </div>
+    <p style="color:#94a3b8;font-size:.9rem;margin-bottom:1rem;">
+      ⚠️ Módulo de Frotas em desenvolvimento — os relatórios serão aprimorados em breve.
+    </p>
+    <div class="export-btns">
+      <a id="frt-pdf-btn" href="#" class="btn-pdf">📄 Exportar PDF</a>
+      <a id="frt-excel-btn" href="#" class="btn-excel">📊 Exportar Excel</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// ── Troca de abas ──────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const tab = btn.dataset.tab;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+    // atualiza URL sem reload
+    const u = new URL(window.location);
+    u.searchParams.set('modulo', tab);
+    history.replaceState({}, '', u);
+  });
+});
+
+// ── Helpers ────────────────────────────────────────────────────────
+function buildUrl(base, params) {
+  const u = new URL(base, window.location.origin);
+  Object.entries(params).forEach(([k, v]) => { if (v) u.searchParams.set(k, v); });
+  return u.toString();
+}
+
+// ── Patrimonial ────────────────────────────────────────────────────
+function updatePatrimonial() {
+  const p = {
+    de:      document.getElementById('pat-de').value,
+    ate:     document.getElementById('pat-ate').value,
+    subtipo: document.getElementById('pat-tipo').value,
+    status:  document.getElementById('pat-status').value,
+  };
+  document.getElementById('pat-pdf-btn').href   = buildUrl('{% url "rel_patrimonial_pdf" %}', p);
+  document.getElementById('pat-excel-btn').href = buildUrl('{% url "rel_patrimonial_excel" %}', p);
+}
+['pat-de','pat-ate','pat-tipo','pat-status'].forEach(id =>
+  document.getElementById(id).addEventListener('change', updatePatrimonial));
+updatePatrimonial();
+
+// ── Financeiro ─────────────────────────────────────────────────────
+function updateFinanceiro() {
+  const p = {
+    de:      document.getElementById('fin-de').value,
+    ate:     document.getElementById('fin-ate').value,
+    subtipo: document.getElementById('fin-subtipo').value,
+    centro:  document.getElementById('fin-centro').value,
+    subgrupo:document.getElementById('fin-subgrupo').value,
+    forma:   document.getElementById('fin-forma').value,
+  };
+  document.getElementById('fin-pdf-btn').href   = buildUrl('{% url "rel_financeiro_pdf" %}', p);
+  document.getElementById('fin-excel-btn').href = buildUrl('{% url "rel_financeiro_excel" %}', p);
+}
+['fin-de','fin-ate','fin-subtipo','fin-centro','fin-subgrupo','fin-forma'].forEach(id =>
+  document.getElementById(id).addEventListener('change', updateFinanceiro));
+updateFinanceiro();
+
+// ── Frotas ─────────────────────────────────────────────────────────
+function updateFrotas() {
+  const p = {
+    de:  document.getElementById('frt-de').value,
+    ate: document.getElementById('frt-ate').value,
+  };
+  document.getElementById('frt-pdf-btn').href   = buildUrl('{% url "rel_frotas_pdf" %}', p);
+  document.getElementById('frt-excel-btn').href = buildUrl('{% url "rel_frotas_excel" %}', p);
+}
+['frt-de','frt-ate'].forEach(id =>
+  document.getElementById(id).addEventListener('change', updateFrotas));
+updateFrotas();
+</script>
+{% endblock %}

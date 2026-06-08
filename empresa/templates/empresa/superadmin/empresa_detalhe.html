@@ -1,0 +1,118 @@
+{% extends "assets/base.html" %}
+{% block title %}{{ empresa.nome }} — Super-Admin{% endblock %}
+{% block extra_styles %}
+.data-table-wrap{overflow-x:auto;background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);}
+.data-table{width:100%;border-collapse:collapse;min-width:420px;}
+.data-table thead tr{background:linear-gradient(135deg,#1e1b4b,#4f46e5);}
+.data-table th{padding:.65rem .9rem;text-align:left;color:white;font-size:.8rem;font-weight:600;}
+.data-table td{padding:.65rem .9rem;border-bottom:1px solid #f1f5f9;font-size:.85rem;color:#334155;}
+.data-table tbody tr:last-child td{border-bottom:none;}
+.data-table tbody tr:hover td{background:#f8fafc;}
+
+.card-list{display:none;flex-direction:column;gap:.75rem;}
+.item-card{background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);padding:1rem 1.1rem;}
+.item-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;gap:.5rem;}
+.item-card-title{font-weight:600;font-size:.95rem;color:#1e293b;}
+.item-card-meta{font-size:.82rem;color:#64748b;display:flex;flex-wrap:wrap;gap:.35rem .75rem;margin-bottom:.65rem;}
+
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:999px;font-size:.73rem;font-weight:600;}
+.badge-admin{background:#ede9fe;color:#4f46e5;}
+.badge-operador{background:#d1fae5;color:#065f46;}
+.badge-ativo{background:#d1fae5;color:#065f46;}
+.badge-inativo{background:#fee2e2;color:#dc2626;}
+
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.75rem;margin-bottom:1.5rem;}
+.info-item{background:white;border-radius:10px;padding:.9rem 1rem;box-shadow:0 1px 6px rgba(0,0,0,.08);}
+.info-label{font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;margin-bottom:.2rem;}
+.info-value{font-size:1rem;font-weight:700;color:#1e293b;}
+
+@media(max-width:600px){
+  .data-table-wrap{display:none;}
+  .card-list{display:flex;}
+}
+{% endblock %}
+
+{% block content %}
+<div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;flex-wrap:wrap;">
+  <a href="{% url 'superadmin_empresas' %}" class="btn btn-outline" style="padding:.35rem .75rem;font-size:.82rem;">← Voltar</a>
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">🏢 {{ empresa.nome }}</h1>
+  <span class="badge badge-{% if empresa.ativa %}ativo{% else %}inativo{% endif %}" style="font-size:.8rem;">
+    {% if empresa.ativa %}Ativa{% else %}Inativa{% endif %}
+  </span>
+  <a href="{% url 'superadmin_empresa_editar' empresa.pk %}" class="btn btn-outline" style="margin-left:auto;padding:.35rem .75rem;font-size:.82rem;">✏️ Editar Empresa</a>
+</div>
+
+{% if empresa.logo %}
+<div style="margin-bottom:1.25rem;">
+  <img src="{{ empresa.logo.url }}" alt="Logo {{ empresa.nome }}" style="height:56px;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;padding:4px;">
+</div>
+{% endif %}
+
+<!-- Info da empresa -->
+<div class="info-grid">
+  <div class="info-item">
+    <div class="info-label">Slug</div>
+    <div class="info-value" style="font-size:.88rem;font-family:monospace;">{{ empresa.slug }}</div>
+  </div>
+  <div class="info-item">
+    <div class="info-label">Criada em</div>
+    <div class="info-value" style="font-size:.92rem;">{{ empresa.criada_em|date:"d/m/Y" }}</div>
+  </div>
+  <div class="info-item">
+    <div class="info-label">Total de membros</div>
+    <div class="info-value">{{ membros.count }}</div>
+  </div>
+  <div class="info-item" style="display:flex;align-items:center;">
+    <form method="post" action="{% url 'superadmin_empresa_toggle' empresa.pk %}" style="width:100%;">
+      {% csrf_token %}
+      <button type="submit" class="btn {% if empresa.ativa %}btn-danger{% else %}btn-primary{% endif %}" style="width:100%;justify-content:center;font-size:.85rem;">
+        {% if empresa.ativa %}⛔ Desativar{% else %}✅ Ativar{% endif %}
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Membros -->
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.85rem;">
+  <h2 style="font-size:1rem;font-weight:700;color:#334155;">👥 Membros</h2>
+</div>
+
+<!-- Desktop -->
+<div class="data-table-wrap">
+  <table class="data-table">
+    <thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for m in membros %}
+    <tr>
+      <td><strong>{{ m.user.username }}</strong></td>
+      <td style="color:#64748b;">{{ m.user.email|default:"—" }}</td>
+      <td><span class="badge badge-{{ m.perfil }}">{{ m.get_perfil_display }}</span></td>
+      <td><span class="badge badge-{% if m.ativo %}ativo{% else %}inativo{% endif %}">{% if m.ativo %}Ativo{% else %}Inativo{% endif %}</span></td>
+      <td><a href="{% url 'superadmin_membro_editar' m.pk %}" class="btn btn-secondary" style="padding:.32rem .7rem;font-size:.8rem;">Editar</a></td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhum membro.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Mobile -->
+<div class="card-list">
+  {% for m in membros %}
+  <div class="item-card">
+    <div class="item-card-header">
+      <span class="item-card-title">{{ m.user.username }}</span>
+      <span class="badge badge-{{ m.perfil }}">{{ m.get_perfil_display }}</span>
+    </div>
+    <div class="item-card-meta">
+      <span>✉️ {{ m.user.email|default:"—" }}</span>
+      <span class="badge badge-{% if m.ativo %}ativo{% else %}inativo{% endif %}">{% if m.ativo %}Ativo{% else %}Inativo{% endif %}</span>
+    </div>
+    <a href="{% url 'superadmin_membro_editar' m.pk %}" class="btn btn-secondary" style="width:100%;justify-content:center;">✏️ Editar</a>
+  </div>
+  {% empty %}
+  <div class="card" style="text-align:center;padding:2rem;color:#94a3b8;">Nenhum membro cadastrado.</div>
+  {% endfor %}
+</div>
+{% endblock %}

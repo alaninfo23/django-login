@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Sum
 from django.shortcuts import get_object_or_404, redirect, render
 
+from empresa.decorators import requer_admin
 from .models import Asset
 
 FIELDS = ['name', 'asset_type', 'acquisition_value', 'purchase_date', 'status', 'location', 'notes']
@@ -58,6 +59,7 @@ def asset_create(request):
 
 
 @login_required
+@requer_admin
 def asset_edit(request, pk):
     asset = _owned_or_404(pk, request.user)
     if request.method == 'POST':
@@ -69,6 +71,7 @@ def asset_edit(request, pk):
 
 
 @login_required
+@requer_admin
 def asset_delete(request, pk):
     asset = _owned_or_404(pk, request.user)
     if request.method == 'POST':

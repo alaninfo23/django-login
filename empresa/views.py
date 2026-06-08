@@ -40,12 +40,58 @@ def superadmin_empresa_criar(request):
             slug = f'{base}-{i}'; i += 1
 
         empresa = Empresa.objects.create(nome=nome, slug=slug)
+        if request.FILES.get('logo'):
+            empresa.logo = request.FILES['logo']
+            empresa.save()
         user    = User.objects.create_user(username=username, password=password, email=email)
         MembroEmpresa.objects.create(empresa=empresa, user=user, perfil='admin')
         messages.success(request, f'Empresa "{nome}" criada com admin "{username}".')
         return redirect('superadmin_empresas')
 
     return render(request, 'empresa/superadmin/criar_empresa.html')
+
+
+@login_required
+@requer_superuser
+def superadmin_empresa_editar(request, pk):
+    empresa = get_object_or_404(Empresa, pk=pk)
+    if request.method == 'POST':
+        nome = request.POST.get('nome', '').strip()
+        if nome:
+            empresa.nome = nome
+        if request.FILES.get('logo'):
+            empresa.logo = request.FILES['logo']
+        elif request.POST.get('remover_logo'):
+            empresa.logo = None
+        empresa.save()
+        messages.success(request, 'Empresa atualizada.')
+        return redirect('superadmin_empresa_detalhe', pk=pk)
+    return render(request, 'empresa/superadmin/editar_empresa.html', {'empresa': empresa})
+
+
+@login_required
+@requer_superuser
+def superadmin_empresa_detalhe(request, pk):
+    empresa = get_object_or_404(Empresa, pk=pk)
+    membros = empresa.membros.select_related('user').order_by('user__username')
+    return render(request, 'empresa/superadmin/empresa_detalhe.html', {
+        'empresa': empresa, 'membros': membros
+    })
+
+
+@login_required
+@requer_superuser
+def superadmin_membro_editar(request, pk):
+    membro = get_object_or_404(MembroEmpresa, pk=pk)
+    if request.method == 'POST':
+        membro.perfil = request.POST.get('perfil', membro.perfil)
+        membro.ativo  = request.POST.get('ativo') == '1'
+        membro.save()
+        messages.success(request, 'Membro atualizado.')
+        return redirect('superadmin_empresa_detalhe', pk=membro.empresa_id)
+    return render(request, 'empresa/superadmin/membro_editar.html', {
+        'membro': membro, 'perfis': MembroEmpresa.Perfil
+    })
 
 
 @login_required

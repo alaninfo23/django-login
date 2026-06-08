@@ -1,0 +1,115 @@
+{% extends "assets/base.html" %}
+{% block title %}Abastecimentos{% endblock %}
+{% block extra_styles %}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.9rem;}
+th{background:#f8fafc;padding:.65rem 1rem;text-align:left;font-weight:600;color:#475569;border-bottom:2px solid #e2e8f0;}
+td{padding:.65rem 1rem;border-bottom:1px solid #f1f5f9;color:#334155;}
+tr:hover td{background:#fafafa;}
+#bulk-bar{display:none;align-items:center;gap:.75rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;}
+#bulk-bar.visible{display:flex;}
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">⛽ Abastecimentos</h1>
+  <a href="{% url 'frota_abastecimento_create' %}" class="btn btn-primary">+ Novo</a>
+</div>
+
+<div class="card" style="margin-bottom:1rem;padding:.85rem 1rem;">
+  <form method="get" style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+    <select name="veiculo" style="padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.9rem;">
+      <option value="">Todos os veículos</option>
+      {% for v in veiculos %}
+      <option value="{{ v.pk }}" {% if veiculo_selecionado == v.pk|stringformat:'s' %}selected{% endif %}>{{ v.placa }} — {{ v.modelo }}</option>
+      {% endfor %}
+    </select>
+    <input type="date" name="de" value="{{ de }}" style="padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.9rem;">
+    <input type="date" name="ate" value="{{ ate }}" style="padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.9rem;">
+    <button type="submit" class="btn btn-outline">Filtrar</button>
+    <a href="{% url 'frota_abastecimentos' %}" class="btn btn-secondary">Limpar</a>
+  </form>
+</div>
+
+<form method="post" action="{% url 'frota_abastecimentos_bulk_delete' %}" id="bulk-form">
+  {% csrf_token %}
+
+  <div id="bulk-bar">
+    <span id="bulk-count" style="font-size:.9rem;font-weight:600;color:#991b1b;"></span>
+    <button type="submit" class="btn btn-danger" style="padding:.4rem .9rem;"
+            onclick="return confirm('Excluir os abastecimentos selecionados?')">🗑 Excluir selecionados</button>
+    <button type="button" class="btn btn-secondary" style="padding:.4rem .9rem;" onclick="desmarcarTodos()">Cancelar</button>
+  </div>
+
+  <div class="card" style="padding:0;">
+    {% if page_obj %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:2rem;"><input type="checkbox" id="check-all" title="Marcar todos"></th>
+            <th>Data</th><th>Veículo</th><th>KM</th><th>Litros</th>
+            <th>Valor Total</th><th>R$/L</th><th>Posto</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for ab in page_obj %}
+          <tr>
+            <td><input type="checkbox" name="ids" value="{{ ab.pk }}" class="row-check"></td>
+            <td style="white-space:nowrap;">{{ ab.data|date:"d/m/Y" }}</td>
+            <td><strong>{{ ab.veiculo.placa }}</strong><br><span style="font-size:.8rem;color:#64748b;">{{ ab.veiculo.marca }} {{ ab.veiculo.modelo }}</span></td>
+            <td>{{ ab.km_atual }} km</td>
+            <td>{{ ab.litros }} L</td>
+            <td>R$ {{ ab.valor_total|floatformat:2 }}</td>
+            <td>{% if ab.valor_por_litro %}R$ {{ ab.valor_por_litro }}{% else %}—{% endif %}</td>
+            <td>{{ ab.posto|default:"—" }}</td>
+            <td style="white-space:nowrap;">
+              <a href="{% url 'frota_abastecimento_edit' ab.pk %}" class="btn btn-outline" style="padding:.3rem .75rem;font-size:.8rem;">Editar</a>
+              <a href="{% url 'frota_abastecimento_delete' ab.pk %}" class="btn btn-danger" style="padding:.3rem .75rem;font-size:.8rem;">Excluir</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div style="display:flex;justify-content:center;gap:.5rem;padding:1rem;">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&de={{ de }}&ate={{ ate }}{% if veiculo_selecionado %}&veiculo={{ veiculo_selecionado }}{% endif %}" class="btn btn-outline">← Anterior</a>{% endif %}
+      <span style="padding:.5rem 1rem;font-size:.88rem;color:#64748b;">Pág. {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&de={{ de }}&ate={{ ate }}{% if veiculo_selecionado %}&veiculo={{ veiculo_selecionado }}{% endif %}" class="btn btn-outline">Próxima →</a>{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div style="text-align:center;padding:3rem;color:#94a3b8;">
+      <div style="font-size:2.5rem;margin-bottom:.75rem;">⛽</div>
+      <p>Nenhum abastecimento registrado.</p>
+      <a href="{% url 'frota_abastecimento_create' %}" class="btn btn-primary" style="margin-top:1rem;">Registrar abastecimento</a>
+    </div>
+    {% endif %}
+  </div>
+</form>
+
+<script>
+const checkAll  = document.getElementById('check-all');
+const bulkBar   = document.getElementById('bulk-bar');
+const bulkCount = document.getElementById('bulk-count');
+
+function atualizarBarra() {
+  const marcados = document.querySelectorAll('.row-check:checked').length;
+  bulkBar.classList.toggle('visible', marcados > 0);
+  bulkCount.textContent = marcados + ' selecionado(s)';
+  checkAll.indeterminate = marcados > 0 && marcados < document.querySelectorAll('.row-check').length;
+  checkAll.checked = marcados > 0 && marcados === document.querySelectorAll('.row-check').length;
+}
+
+function desmarcarTodos() {
+  document.querySelectorAll('.row-check, #check-all').forEach(c => c.checked = false);
+  atualizarBarra();
+}
+
+checkAll.addEventListener('change', () => {
+  document.querySelectorAll('.row-check').forEach(c => c.checked = checkAll.checked);
+  atualizarBarra();
+});
+document.querySelectorAll('.row-check').forEach(c => c.addEventListener('change', atualizarBarra));
+</script>
+{% endblock %}

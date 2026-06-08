@@ -1,0 +1,64 @@
+{% extends "assets/base.html" %}
+{% block title %}{% if ab %}Editar{% else %}Novo{% endif %} Abastecimento{% endblock %}
+{% block extra_styles %}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.field{display:flex;flex-direction:column;gap:.3rem;}
+.field-label{font-size:.875rem;font-weight:600;color:#334155;}
+.field-input{padding:.6rem .9rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.95rem;}
+.field-input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.15);}
+.full{grid-column:1/-1;}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">
+    {% if ab %}✏️ Editar Abastecimento{% else %}⛽ Novo Abastecimento{% endif %}
+  </h1>
+  <a href="{% url 'frota_abastecimentos' %}" class="btn btn-secondary">← Voltar</a>
+</div>
+
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-grid">
+      <div class="field full">
+        <label class="field-label">Veículo *</label>
+        <select class="field-input" name="veiculo" required>
+          <option value="">Selecione...</option>
+          {% for v in veiculos %}
+          <option value="{{ v.pk }}" {% if ab.veiculo_id == v.pk %}selected{% endif %}>{{ v.placa }} — {{ v.marca }} {{ v.modelo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Data *</label>
+        <input class="field-input" type="date" name="data" value="{{ ab.data|date:'Y-m-d'|default:'' }}" required>
+      </div>
+      <div class="field">
+        <label class="field-label">KM Atual *</label>
+        <input class="field-input" type="number" name="km_atual" value="{{ ab.km_atual|default:'' }}" required min="0">
+      </div>
+      <div class="field">
+        <label class="field-label">Litros *</label>
+        <input class="field-input" type="number" name="litros" value="{{ ab.litros|default:'' }}" required step="0.01" min="0.01">
+      </div>
+      <div class="field">
+        <label class="field-label">Valor Total (R$) *</label>
+        <input class="field-input" type="number" name="valor_total" value="{{ ab.valor_total|default:'' }}" required step="0.01" min="0.01">
+      </div>
+      <div class="field full">
+        <label class="field-label">Posto</label>
+        <input class="field-input" name="posto" value="{{ ab.posto|default:'' }}" maxlength="200">
+      </div>
+      <div class="field full">
+        <label class="field-label">Observações</label>
+        <textarea class="field-input" name="observacoes" rows="2">{{ ab.observacoes|default:'' }}</textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+      <button type="submit" class="btn btn-primary">💾 Salvar</button>
+      <a href="{% url 'frota_abastecimentos' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

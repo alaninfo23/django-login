@@ -2,48 +2,112 @@
 {% load fin_filters %}
 {% block title %}Despesas{% endblock %}
 {% block extra_styles %}
-.filter-bar{background:white;padding:1rem 1.25rem;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);display:flex;flex-wrap:wrap;gap:.75rem;align-items:flex-end;margin-bottom:1.5rem;}
-.filter-field{display:flex;flex-direction:column;gap:.25rem;}
-.filter-field label{font-size:.75rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;}
-.filter-field input{padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:6px;font-size:.88rem;}
-.filter-field input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.1);}
+.filter-bar{background:white;padding:1rem 1.1rem;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);display:flex;flex-wrap:wrap;gap:.65rem;align-items:flex-end;margin-bottom:1.25rem;}
+.filter-field{display:flex;flex-direction:column;gap:.2rem;}
+.filter-field label{font-size:.72rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.04em;}
+.filter-field input,.filter-field select{padding:.48rem .7rem;border:1px solid #e2e8f0;border-radius:6px;font-size:.88rem;}
+.filter-field input:focus{outline:none;border-color:#4f46e5;}
+
+/* Tabela desktop */
 .data-table-wrap{overflow-x:auto;background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);}
 .data-table{width:100%;border-collapse:collapse;min-width:700px;}
 .data-table thead tr{background:linear-gradient(135deg,#1e1b4b,#4f46e5);}
-.data-table th{padding:.75rem 1rem;text-align:left;color:white;font-size:.82rem;font-weight:600;letter-spacing:.03em;}
-.data-table td{padding:.75rem 1rem;border-bottom:1px solid #f1f5f9;font-size:.88rem;color:#334155;}
+.data-table th{padding:.65rem .9rem;text-align:left;color:white;font-size:.8rem;font-weight:600;letter-spacing:.03em;}
+.data-table td{padding:.65rem .9rem;border-bottom:1px solid #f1f5f9;font-size:.85rem;color:#334155;}
 .data-table tbody tr:last-child td{border-bottom:none;}
 .data-table tbody tr:hover td{background:#f8fafc;}
-.data-table tfoot td{padding:.85rem 1rem;font-weight:700;font-size:.95rem;background:#f8fafc;border-top:2px solid #e2e8f0;}
-.badge{display:inline-block;padding:.2rem .65rem;border-radius:999px;font-size:.75rem;font-weight:600;}
+.data-table tfoot td{padding:.8rem .9rem;font-weight:700;font-size:.9rem;background:#f8fafc;border-top:2px solid #e2e8f0;}
+
+/* Cards mobile */
+.card-list{display:none;flex-direction:column;gap:.75rem;}
+.item-card{background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);padding:1rem 1.1rem;}
+.item-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.5rem;gap:.5rem;}
+.item-card-title{font-weight:600;font-size:.92rem;color:#1e293b;line-height:1.3;}
+.item-card-value{font-family:monospace;font-size:1rem;font-weight:700;color:#1e293b;white-space:nowrap;}
+.item-card-meta{display:flex;flex-wrap:wrap;gap:.35rem .75rem;font-size:.8rem;color:#64748b;margin-bottom:.65rem;}
+.item-card-actions{display:flex;gap:.5rem;}
+.item-card-actions .btn{flex:1;justify-content:center;padding:.5rem;font-size:.85rem;}
+
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:999px;font-size:.73rem;font-weight:600;}
 .badge-pago{background:#d1fae5;color:#065f46;}
 .badge-pendente{background:#fef3c7;color:#92400e;}
-.pagination{display:flex;gap:.4rem;margin-top:1.25rem;align-items:center;}
+.pagination{display:flex;gap:.4rem;margin-top:1.1rem;align-items:center;}
 .pagination a,.pagination span{padding:.4rem .75rem;border-radius:6px;font-size:.85rem;text-decoration:none;}
 .pagination a{background:white;color:#4f46e5;border:1px solid #c7d2fe;}
 .pagination a:hover{background:#f5f3ff;}
 .pagination .current{background:#4f46e5;color:white;border:1px solid #4f46e5;}
+.total-mobile{background:white;border-radius:8px;padding:.75rem 1rem;box-shadow:0 1px 6px rgba(0,0,0,.08);display:flex;justify-content:space-between;font-size:.9rem;font-weight:600;margin-top:.75rem;}
+
+@media(max-width:640px){
+  .data-table-wrap{display:none;}
+  .card-list{display:flex;}
+  .filter-bar{gap:.5rem;}
+  .filter-field{flex:1;min-width:130px;}
+}
 {% endblock %}
+
 {% block content %}
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
-  <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;">💸 Despesas</h1>
-  <a href="{% url 'despesa_create' %}" class="btn btn-primary">+ Nova Despesa</a>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">💸 Despesas</h1>
+  <a href="{% url 'despesa_create' %}" class="btn btn-primary">+ Nova</a>
 </div>
+
 <form method="get" class="filter-bar">
-  <div class="filter-field"><label>Mês</label><input type="month" name="mes" value="{{ mes }}"></div>
-  <div class="filter-field"><label>Centro de Custo</label><input type="text" name="centro" value="{{ centro }}" placeholder="Filtrar..."></div>
-  <div class="filter-field"><label>SubGrupo</label><input type="text" name="subgrupo" value="{{ subgrupo }}" placeholder="Filtrar..."></div>
-  <button type="submit" class="btn btn-primary">Filtrar</button>
-  <a href="{% url 'despesa_list' %}" class="btn btn-outline">Limpar</a>
+  <div class="filter-field"><label>De</label><input type="date" name="de" value="{{ de }}"></div>
+  <div class="filter-field"><label>Até</label><input type="date" name="ate" value="{{ ate }}"></div>
+  <div class="filter-field">
+    <label>Centro de Custo</label>
+    <select name="centro" style="padding:.48rem .7rem;border:1px solid #e2e8f0;border-radius:6px;font-size:.88rem;">
+      <option value="">Todos</option>
+      {% for c in centros %}<option value="{{ c }}" {% if centro == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="filter-field">
+    <label>SubGrupo</label>
+    <select name="subgrupo" style="padding:.48rem .7rem;border:1px solid #e2e8f0;border-radius:6px;font-size:.88rem;">
+      <option value="">Todos</option>
+      {% for s in subgrupos %}<option value="{{ s }}" {% if subgrupo == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="filter-field">
+    <label>Situação</label>
+    <select name="situacao" style="padding:.48rem .7rem;border:1px solid #e2e8f0;border-radius:6px;font-size:.88rem;">
+      <option value="">Todas</option>
+      {% for val, label in situacoes.choices %}<option value="{{ val }}" {% if situacao == val %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <div style="display:flex;gap:.4rem;align-items:flex-end;">
+    <button type="submit" class="btn btn-primary">Filtrar</button>
+    <a href="{% url 'despesa_list' %}" class="btn btn-outline">Limpar</a>
+  </div>
 </form>
+
 {% if page_obj.object_list %}
+
+<form method="post" action="{% url 'despesa_bulk_delete' %}" id="bulk-form">
+{% csrf_token %}
+
+<div id="bulk-bar" style="display:none;align-items:center;gap:.75rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;">
+  <span id="bulk-count" style="font-size:.9rem;font-weight:600;color:#991b1b;"></span>
+  {% if request.membro.perfil == 'admin' %}
+  <button type="submit" class="btn btn-danger" style="padding:.4rem .9rem;"
+          onclick="return confirm('Excluir as despesas selecionadas?')">🗑 Excluir selecionados</button>
+  {% endif %}
+  <button type="button" class="btn btn-secondary" style="padding:.4rem .9rem;" onclick="desmarcarTodos()">Cancelar</button>
+</div>
+
+<!-- Desktop: tabela -->
 <div class="data-table-wrap">
   <table class="data-table">
-    <thead><tr><th>Data</th><th>Centro de Custo</th><th>SubGrupo</th><th>Descrição</th><th>Forma Pag.</th><th>Situação</th><th>Valor</th><th></th></tr></thead>
+    <thead><tr>
+      <th style="width:2rem;"><input type="checkbox" id="check-all" title="Marcar todos"></th>
+      <th>Data</th><th>Centro de Custo</th><th>SubGrupo</th><th>Descrição</th><th>Forma Pag.</th><th>Situação</th><th>Valor</th><th></th>
+    </tr></thead>
     <tbody>
     {% for d in page_obj %}
     <tr>
-      <td>{{ d.data|date:"d/m/Y" }}</td>
+      <td><input type="checkbox" name="ids" value="{{ d.pk }}" class="row-check"></td>
+      <td style="white-space:nowrap;">{{ d.data|date:"d/m/Y" }}</td>
       <td>{{ d.centro_custo }}</td>
       <td>{{ d.subgrupo }}</td>
       <td>{{ d.descricao|truncatechars:40 }}</td>
@@ -51,26 +115,61 @@
       <td><span class="badge badge-{{ d.situacao }}">{{ d.get_situacao_display }}</span></td>
       <td style="font-family:monospace;white-space:nowrap;">{{ d.valor|brl }}</td>
       <td style="white-space:nowrap;">
-        <a href="{% url 'despesa_edit' d.pk %}" class="btn btn-secondary" style="padding:.35rem .75rem;font-size:.82rem;">Editar</a>
-        <a href="{% url 'despesa_delete' d.pk %}" class="btn btn-danger" style="padding:.35rem .75rem;font-size:.82rem;">Excluir</a>
+        {% if request.membro.perfil == 'admin' %}
+        <a href="{% url 'despesa_edit' d.pk %}" class="btn btn-secondary" style="padding:.32rem .7rem;font-size:.8rem;">Editar</a>
+        <a href="{% url 'despesa_delete' d.pk %}" class="btn btn-danger" style="padding:.32rem .7rem;font-size:.8rem;">Excluir</a>
+        {% endif %}
       </td>
     </tr>
     {% endfor %}
     </tbody>
     <tfoot><tr>
+      <td></td>
       <td colspan="6" style="text-align:right;color:#64748b;">Total filtrado:</td>
-      <td style="font-family:monospace;">{{ total|brl }}</td>
+      <td style="font-family:monospace;white-space:nowrap;">{{ total|brl }}</td>
       <td></td>
     </tr></tfoot>
   </table>
 </div>
+</form>
+
+<!-- Mobile: cards -->
+<div class="card-list">
+  {% for d in page_obj %}
+  <div class="item-card">
+    <div class="item-card-header">
+      <div class="item-card-title">{{ d.descricao|truncatechars:50 }}</div>
+      <div class="item-card-value">{{ d.valor|brl }}</div>
+    </div>
+    <div class="item-card-meta">
+      <span>📅 {{ d.data|date:"d/m/Y" }}</span>
+      <span>🏷️ {{ d.centro_custo }}</span>
+      <span>🗂️ {{ d.subgrupo }}</span>
+      <span>💳 {{ d.forma_pagamento }}</span>
+      <span class="badge badge-{{ d.situacao }}">{{ d.get_situacao_display }}</span>
+    </div>
+    <div class="item-card-actions">
+      {% if request.membro.perfil == 'admin' %}
+      <a href="{% url 'despesa_edit' d.pk %}" class="btn btn-secondary">✏️ Editar</a>
+      <a href="{% url 'despesa_delete' d.pk %}" class="btn btn-danger">🗑️ Excluir</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+  <div class="total-mobile">
+    <span>Total filtrado</span>
+    <span style="font-family:monospace;">{{ total|brl }}</span>
+  </div>
+</div>
+
 {% if page_obj.has_other_pages %}
 <div class="pagination">
-  {% if page_obj.has_previous %}<a href="?mes={{ mes }}&centro={{ centro }}&subgrupo={{ subgrupo }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>{% endif %}
+  {% if page_obj.has_previous %}<a href="?de={{ de }}&ate={{ ate }}&centro={{ centro }}&subgrupo={{ subgrupo }}&situacao={{ situacao }}&page={{ page_obj.previous_page_number }}">‹ Anterior</a>{% endif %}
   <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-  {% if page_obj.has_next %}<a href="?mes={{ mes }}&centro={{ centro }}&subgrupo={{ subgrupo }}&page={{ page_obj.next_page_number }}">Próxima ›</a>{% endif %}
+  {% if page_obj.has_next %}<a href="?de={{ de }}&ate={{ ate }}&centro={{ centro }}&subgrupo={{ subgrupo }}&situacao={{ situacao }}&page={{ page_obj.next_page_number }}">Próxima ›</a>{% endif %}
 </div>
 {% endif %}
+
 {% else %}
 <div class="card" style="text-align:center;padding:3rem 1rem;color:#94a3b8;">
   <div style="font-size:2.5rem;margin-bottom:1rem;">📭</div>
@@ -78,4 +177,28 @@
   <a href="{% url 'despesa_create' %}" class="btn btn-primary">Cadastrar despesa</a>
 </div>
 {% endif %}
+
+<script>
+const checkAll  = document.getElementById('check-all');
+const bulkBar   = document.getElementById('bulk-bar');
+const bulkCount = document.getElementById('bulk-count');
+if (checkAll) {
+  function atualizarBarra() {
+    const marcados = document.querySelectorAll('.row-check:checked').length;
+    bulkBar.style.display = marcados > 0 ? 'flex' : 'none';
+    bulkCount.textContent = marcados + ' selecionada(s)';
+    checkAll.indeterminate = marcados > 0 && marcados < document.querySelectorAll('.row-check').length;
+    checkAll.checked = marcados > 0 && marcados === document.querySelectorAll('.row-check').length;
+  }
+  function desmarcarTodos() {
+    document.querySelectorAll('.row-check, #check-all').forEach(c => c.checked = false);
+    atualizarBarra();
+  }
+  checkAll.addEventListener('change', () => {
+    document.querySelectorAll('.row-check').forEach(c => c.checked = checkAll.checked);
+    atualizarBarra();
+  });
+  document.querySelectorAll('.row-check').forEach(c => c.addEventListener('change', atualizarBarra));
+}
+</script>
 {% endblock %}

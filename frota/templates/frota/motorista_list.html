@@ -1,0 +1,68 @@
+{% extends "assets/base.html" %}
+{% block title %}Motoristas{% endblock %}
+{% block extra_styles %}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.9rem;}
+th{background:#f8fafc;padding:.65rem 1rem;text-align:left;font-weight:600;color:#475569;border-bottom:2px solid #e2e8f0;}
+td{padding:.65rem 1rem;border-bottom:1px solid #f1f5f9;color:#334155;}
+tr:hover td{background:#fafafa;}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:20px;font-size:.78rem;font-weight:600;}
+.badge-ativo{background:#d1fae5;color:#065f46;}
+.badge-inativo{background:#fee2e2;color:#991b1b;}
+.warn{color:#b45309;font-weight:600;}
+.danger{color:#991b1b;font-weight:600;}
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">👤 Motoristas</h1>
+  <a href="{% url 'frota_motorista_create' %}" class="btn btn-primary">+ Novo Motorista</a>
+</div>
+
+<div class="card" style="padding:0;">
+  {% if motoristas %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th><th style="white-space:nowrap;">CPF</th><th>Telefone</th>
+          <th>CNH</th><th>Categoria</th><th>Validade CNH</th>
+          <th>Status</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in motoristas %}
+        <tr>
+          <td><strong>{{ m.nome }}</strong></td>
+          <td style="white-space:nowrap;">{{ m.cpf|default:"—" }}</td>          <td>{{ m.telefone|default:"—" }}</td>
+          <td>{{ m.cnh_numero|default:"—" }}</td>
+          <td>{{ m.cnh_categoria|default:"—" }}</td>
+          <td>
+            {% if m.cnh_validade %}
+              {% if m.cnh_vencida %}
+                <span class="danger">{{ m.cnh_validade|date:"d/m/Y" }} ⚠️ Vencida</span>
+              {% elif m.cnh_vencendo %}
+                <span class="warn">{{ m.cnh_validade|date:"d/m/Y" }} ⏰ Vencendo</span>
+              {% else %}
+                {{ m.cnh_validade|date:"d/m/Y" }}
+              {% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td><span class="badge badge-{{ m.status }}">{{ m.get_status_display }}</span></td>
+          <td style="white-space:nowrap;">
+            <a href="{% url 'frota_motorista_edit' m.pk %}" class="btn btn-outline" style="padding:.3rem .75rem;font-size:.8rem;">Editar</a>
+            <a href="{% url 'frota_motorista_delete' m.pk %}" class="btn btn-danger" style="padding:.3rem .75rem;font-size:.8rem;">Excluir</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:3rem;color:#94a3b8;">
+    <div style="font-size:2.5rem;margin-bottom:.75rem;">👤</div>
+    <p>Nenhum motorista cadastrado.</p>
+    <a href="{% url 'frota_motorista_create' %}" class="btn btn-primary" style="margin-top:1rem;">Cadastrar motorista</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -11,14 +11,17 @@
 {% block content %}
 <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;margin-bottom:1.5rem;">🏢 Nova Empresa</h1>
 <div class="form-card">
-  <form method="post">
+  <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     <div class="field">
       <label>Nome da Empresa *</label>
       <input type="text" name="nome" placeholder="Ex: Transportadora Silva Ltda" required autofocus>
     </div>
-    <div class="section-label">Usuário Administrador da Empresa</div>
     <div class="field">
+      <label>Logo da Empresa</label>
+      <input type="file" name="logo" accept="image/*">
+    </div>
+    <div class="section-label">Usuário Administrador da Empresa</div>    <div class="field">
       <label>Username *</label>
       <input type="text" name="username" placeholder="Nome de login do admin">
     </div>

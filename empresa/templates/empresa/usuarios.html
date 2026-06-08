@@ -2,29 +2,37 @@
 {% block title %}Usuários{% endblock %}
 {% block extra_styles %}
 .data-table-wrap{overflow-x:auto;background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);}
-.data-table{width:100%;border-collapse:collapse;}
+.data-table{width:100%;border-collapse:collapse;min-width:480px;}
 .data-table thead tr{background:linear-gradient(135deg,#1e1b4b,#4f46e5);}
-.data-table th{padding:.75rem 1rem;text-align:left;color:white;font-size:.82rem;font-weight:600;}
-.data-table td{padding:.75rem 1rem;border-bottom:1px solid #f1f5f9;font-size:.88rem;color:#334155;}
+.data-table th{padding:.65rem .9rem;text-align:left;color:white;font-size:.8rem;font-weight:600;}
+.data-table td{padding:.65rem .9rem;border-bottom:1px solid #f1f5f9;font-size:.85rem;color:#334155;}
 .data-table tbody tr:last-child td{border-bottom:none;}
 .data-table tbody tr:hover td{background:#f8fafc;}
-.badge{display:inline-block;padding:.2rem .65rem;border-radius:999px;font-size:.75rem;font-weight:600;}
+
+.card-list{display:none;flex-direction:column;gap:.75rem;}
+.item-card{background:white;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.08);padding:1rem 1.1rem;}
+.item-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem;gap:.5rem;}
+.item-card-title{font-weight:600;font-size:.95rem;color:#1e293b;}
+.item-card-meta{font-size:.82rem;color:#64748b;margin-bottom:.65rem;display:flex;flex-wrap:wrap;gap:.35rem .75rem;}
+
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:999px;font-size:.73rem;font-weight:600;}
 .badge-admin{background:#ede9fe;color:#4f46e5;}
 .badge-operador{background:#d1fae5;color:#065f46;}
 .badge-inativo{background:#fee2e2;color:#dc2626;}
+
+@media(max-width:600px){
+  .data-table-wrap{display:none;}
+  .card-list{display:flex;}
+}
 {% endblock %}
+
 {% block content %}
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
-  <h1 style="font-size:1.4rem;font-weight:700;color:#1e293b;">👥 Usuários da Empresa</h1>
-  <a href="{% url 'usuario_convidar' %}" class="btn btn-primary">+ Adicionar Usuário</a>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.1rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">👥 Usuários</h1>
+  <a href="{% url 'usuario_convidar' %}" class="btn btn-primary">+ Adicionar</a>
 </div>
-{% if messages %}
-  {% for msg in messages %}
-  <div style="background:{% if msg.tags == 'error' %}#fee2e2{% elif msg.tags == 'warning' %}#fef3c7{% else %}#d1fae5{% endif %};
-    color:{% if msg.tags == 'error' %}#dc2626{% elif msg.tags == 'warning' %}#92400e{% else %}#065f46{% endif %};
-    padding:.75rem 1rem;border-radius:8px;margin-bottom:1rem;font-size:.88rem;">{{ msg }}</div>
-  {% endfor %}
-{% endif %}
+
+<!-- Desktop -->
 <div class="data-table-wrap">
   <table class="data-table">
     <thead><tr><th>Usuário</th><th>E-mail</th><th>Perfil</th><th>Status</th><th></th></tr></thead>
@@ -35,12 +43,33 @@
       <td>{{ m.user.email|default:"—" }}</td>
       <td><span class="badge badge-{{ m.perfil }}">{{ m.get_perfil_display }}</span></td>
       <td><span class="badge {% if m.ativo %}badge-operador{% else %}badge-inativo{% endif %}">{% if m.ativo %}Ativo{% else %}Inativo{% endif %}</span></td>
-      <td><a href="{% url 'usuario_editar' m.pk %}" class="btn btn-secondary" style="padding:.35rem .75rem;font-size:.82rem;">Editar</a></td>
+      <td>{% if request.membro.perfil == 'admin' %}<a href="{% url 'usuario_editar' m.pk %}" class="btn btn-secondary" style="padding:.32rem .7rem;font-size:.8rem;">Editar</a>{% endif %}</td>
     </tr>
     {% empty %}
     <tr><td colspan="5" style="text-align:center;color:#94a3b8;padding:2rem;">Nenhum usuário cadastrado.</td></tr>
     {% endfor %}
     </tbody>
   </table>
+</div>
+
+<!-- Mobile -->
+<div class="card-list">
+  {% for m in membros %}
+  <div class="item-card">
+    <div class="item-card-header">
+      <span class="item-card-title">{{ m.user.username }}</span>
+      <span class="badge badge-{{ m.perfil }}">{{ m.get_perfil_display }}</span>
+    </div>
+    <div class="item-card-meta">
+      <span>✉️ {{ m.user.email|default:"—" }}</span>
+      <span class="badge {% if m.ativo %}badge-operador{% else %}badge-inativo{% endif %}">{% if m.ativo %}Ativo{% else %}Inativo{% endif %}</span>
+    </div>
+    {% if request.membro.perfil == 'admin' %}
+    <a href="{% url 'usuario_editar' m.pk %}" class="btn btn-secondary" style="width:100%;justify-content:center;">✏️ Editar</a>
+    {% endif %}
+  </div>
+  {% empty %}
+  <div class="card" style="text-align:center;padding:2rem;color:#94a3b8;">Nenhum usuário cadastrado.</div>
+  {% endfor %}
 </div>
 {% endblock %}

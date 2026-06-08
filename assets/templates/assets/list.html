@@ -107,8 +107,10 @@
         <td>{{ asset.purchase_date|date:"d/m/Y"|default:"—" }}</td>
         <td><span class="badge badge-default">{{ asset.get_status_display }}</span></td>
         <td style="white-space:nowrap;">
+          {% if request.membro.perfil == 'admin' %}
           <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-secondary" style="padding:.35rem .75rem;font-size:.82rem;">Editar</a>
           <a href="{% url 'asset_delete' asset.pk %}" class="btn btn-danger" style="padding:.35rem .75rem;font-size:.82rem;">Deletar</a>
+          {% endif %}
         </td>
       </tr>
     {% endfor %}
@@ -127,8 +129,10 @@
     <div class="card-row"><span>Status</span><span>{{ asset.get_status_display }}</span></div>
     <div class="card-row"><span>Localização</span><span>{{ asset.location|default:"—" }}</span></div>
     <div class="card-actions">
+      {% if request.membro.perfil == 'admin' %}
       <a href="{% url 'asset_edit' asset.pk %}" class="btn btn-secondary">Editar</a>
       <a href="{% url 'asset_delete' asset.pk %}" class="btn btn-danger">Deletar</a>
+      {% endif %}
     </div>
   </div>
 {% endfor %}

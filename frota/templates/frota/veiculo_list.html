@@ -1,0 +1,58 @@
+{% extends "assets/base.html" %}
+{% block title %}Veículos{% endblock %}
+{% block extra_styles %}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.9rem;}
+th{background:#f8fafc;padding:.65rem 1rem;text-align:left;font-weight:600;color:#475569;border-bottom:2px solid #e2e8f0;}
+td{padding:.65rem 1rem;border-bottom:1px solid #f1f5f9;color:#334155;}
+tr:hover td{background:#fafafa;}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:20px;font-size:.78rem;font-weight:600;}
+.badge-ativo{background:#d1fae5;color:#065f46;}
+.badge-manutencao{background:#fef3c7;color:#92400e;}
+.badge-inativo{background:#fee2e2;color:#991b1b;}
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">🚛 Veículos</h1>
+  <a href="{% url 'frota_veiculo_create' %}" class="btn btn-primary">+ Novo Veículo</a>
+</div>
+
+<div class="card" style="padding:0;">
+  {% if veiculos %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Placa</th><th>Marca / Modelo</th><th>Ano</th>
+          <th>KM Atual</th><th>Cap. Carga</th><th>Status</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for v in veiculos %}
+        <tr>
+          <td><strong>{{ v.placa }}</strong></td>
+          <td>{{ v.marca }} {{ v.modelo }}</td>
+          <td>{{ v.ano }}</td>
+          <td>{{ v.km_atual|floatformat:0 }} km</td>
+          <td>{{ v.capacidade_carga }} t</td>
+          <td>
+            <span class="badge badge-{{ v.status }}">{{ v.get_status_display }}</span>
+          </td>
+          <td style="white-space:nowrap;">
+            <a href="{% url 'frota_veiculo_edit' v.pk %}" class="btn btn-outline" style="padding:.3rem .75rem;font-size:.8rem;">Editar</a>
+            <a href="{% url 'frota_veiculo_delete' v.pk %}" class="btn btn-danger" style="padding:.3rem .75rem;font-size:.8rem;">Excluir</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div style="text-align:center;padding:3rem;color:#94a3b8;">
+    <div style="font-size:2.5rem;margin-bottom:.75rem;">🚛</div>
+    <p>Nenhum veículo cadastrado.</p>
+    <a href="{% url 'frota_veiculo_create' %}" class="btn btn-primary" style="margin-top:1rem;">Cadastrar primeiro veículo</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

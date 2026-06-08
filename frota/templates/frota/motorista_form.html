@@ -1,0 +1,110 @@
+{% extends "assets/base.html" %}
+{% block title %}{% if motorista %}Editar{% else %}Novo{% endif %} Motorista{% endblock %}
+{% block extra_styles %}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.field{display:flex;flex-direction:column;gap:.3rem;}
+.field-label{font-size:.875rem;font-weight:600;color:#334155;}
+.field-input{padding:.6rem .9rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.95rem;}
+.field-input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.15);}
+.field-input.erro{border-color:#dc2626;}
+.field-erro{color:#dc2626;font-size:.8rem;}
+.full{grid-column:1/-1;}
+@media(max-width:600px){.form-grid{grid-template-columns:1fr;}}
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">
+    {% if motorista %}✏️ Editar Motorista{% else %}👤 Novo Motorista{% endif %}
+  </h1>
+  <a href="{% url 'frota_motoristas' %}" class="btn btn-secondary">← Voltar</a>
+</div>
+
+<div class="card">
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-grid">
+      <div class="field full">
+        <label class="field-label">Nome Completo *</label>
+        <input class="field-input" name="nome"
+               value="{{ post.nome|default:motorista.nome|default:'' }}" required maxlength="200">
+      </div>
+      <div class="field">
+        <label class="field-label">CPF</label>
+        <input class="field-input {% if erros.cpf %}erro{% endif %}"
+               name="cpf" id="cpf"
+               value="{{ post.cpf|default:motorista.cpf|default:'' }}"
+               maxlength="14" placeholder="000.000.000-00" inputmode="numeric">
+        {% if erros.cpf %}<span class="field-erro">{{ erros.cpf }}</span>{% endif %}
+      </div>
+      <div class="field">
+        <label class="field-label">Telefone</label>
+        <input class="field-input" name="telefone"
+               value="{{ post.telefone|default:motorista.telefone|default:'' }}"
+               maxlength="20" placeholder="(00) 00000-0000">
+      </div>
+      <div class="field">
+        <label class="field-label">Número da CNH</label>
+        <input class="field-input {% if erros.cnh_numero %}erro{% endif %}"
+               name="cnh_numero" id="cnh_numero"
+               value="{{ post.cnh_numero|default:motorista.cnh_numero|default:'' }}"
+               maxlength="11" placeholder="00000000000" inputmode="numeric">
+        {% if erros.cnh_numero %}<span class="field-erro">{{ erros.cnh_numero }}</span>{% endif %}
+      </div>
+      <div class="field">
+        <label class="field-label">Categoria CNH</label>
+        <select class="field-input" name="cnh_categoria">
+          <option value="">—</option>
+          {% for c in categorias %}
+          <option value="{{ c.value }}"
+            {% if post.cnh_categoria == c.value or motorista.cnh_categoria == c.value %}selected{% endif %}>
+            {{ c.label }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label">Validade CNH</label>
+        <input class="field-input" type="date" name="cnh_validade"
+               value="{{ post.cnh_validade|default:motorista.cnh_validade|date:'Y-m-d'|default:'' }}">
+      </div>
+      <div class="field">
+        <label class="field-label">Status *</label>
+        <select class="field-input" name="status" required>
+          {% for s in status_choices %}
+          <option value="{{ s.value }}"
+            {% if post.status == s.value or motorista.status == s.value %}selected{% endif %}>
+            {{ s.label }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field full">
+        <label class="field-label">Observações</label>
+        <textarea class="field-input" name="observacoes"
+                  rows="3">{{ post.observacoes|default:motorista.observacoes|default:'' }}</textarea>
+      </div>
+    </div>
+    <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
+      <button type="submit" class="btn btn-primary">💾 Salvar</button>
+      <a href="{% url 'frota_motoristas' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+// Máscara CPF: 000.000.000-00
+document.getElementById('cpf').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length > 9) v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+  else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+  else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+  this.value = v;
+});
+
+// CNH: apenas dígitos, máx 11
+document.getElementById('cnh_numero').addEventListener('input', function() {
+  this.value = this.value.replace(/\D/g, '').slice(0, 11);
+});
+</script>
+{% endblock %}

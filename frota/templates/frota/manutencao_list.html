@@ -1,0 +1,135 @@
+{% extends "assets/base.html" %}
+{% block title %}Manutenções{% endblock %}
+{% block extra_styles %}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.9rem;}
+th{background:#f8fafc;padding:.65rem 1rem;text-align:left;font-weight:600;color:#475569;border-bottom:2px solid #e2e8f0;}
+td{padding:.65rem 1rem;border-bottom:1px solid #f1f5f9;color:#334155;}
+tr:hover td{background:#fafafa;}
+tr.row-agendada td{background:#fffbeb;}
+tr.row-vencida td{background:#fef2f2;}
+.badge{display:inline-block;padding:.2rem .6rem;border-radius:20px;font-size:.78rem;font-weight:600;}
+.badge-tipo{background:#e0e7ff;color:#3730a3;}
+.badge-realizada{background:#d1fae5;color:#065f46;white-space:nowrap;}
+.badge-agendada{background:#fef3c7;color:#92400e;white-space:nowrap;}
+.badge-vencida{background:#fee2e2;color:#991b1b;white-space:nowrap;}
+#bulk-bar{display:none;align-items:center;gap:.75rem;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;}
+#bulk-bar.visible{display:flex;}
+{% endblock %}
+{% block content %}
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+  <h1 style="font-size:1.3rem;font-weight:700;color:#1e293b;">🔧 Manutenções</h1>
+  <a href="{% url 'frota_manutencao_create' %}" class="btn btn-primary">+ Nova</a>
+</div>
+
+<div class="card" style="margin-bottom:1rem;padding:.85rem 1rem;">
+  <form method="get" style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+    <select name="veiculo" style="padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.9rem;">
+      <option value="">Todos os veículos</option>
+      {% for v in veiculos %}
+      <option value="{{ v.pk }}" {% if veiculo_selecionado == v.pk|stringformat:'s' %}selected{% endif %}>{{ v.placa }} — {{ v.modelo }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" style="padding:.5rem .75rem;border:1px solid #e2e8f0;border-radius:7px;font-size:.9rem;">
+      <option value="">Todos os status</option>
+      <option value="agendada" {% if status_selecionado == 'agendada' %}selected{% endif %}>📅 Agendadas</option>
+      <option value="realizada" {% if status_selecionado == 'realizada' %}selected{% endif %}>✅ Realizadas</option>
+    </select>
+    <button type="submit" class="btn btn-outline">Filtrar</button>
+    {% if veiculo_selecionado or status_selecionado %}<a href="{% url 'frota_manutencoes' %}" class="btn btn-secondary">Limpar</a>{% endif %}
+  </form>
+</div>
+
+<form method="post" action="{% url 'frota_manutencoes_bulk_delete' %}" id="bulk-form">
+  {% csrf_token %}
+
+  <div id="bulk-bar">
+    <span id="bulk-count" style="font-size:.9rem;font-weight:600;color:#991b1b;"></span>
+    <button type="submit" class="btn btn-danger" style="padding:.4rem .9rem;"
+            onclick="return confirm('Excluir as manutenções selecionadas?')">🗑 Excluir selecionados</button>
+    <button type="button" class="btn btn-secondary" style="padding:.4rem .9rem;" onclick="desmarcarTodos()">Cancelar</button>
+  </div>
+
+  <div class="card" style="padding:0;">
+    {% if page_obj %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:2rem;"><input type="checkbox" id="check-all" title="Marcar todos"></th>
+            <th>Data</th><th>Veículo</th><th>Tipo</th><th>Descrição</th>
+            <th>KM</th><th>Valor</th><th>Oficina</th><th>Próx. Revisão</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in page_obj %}
+          <tr class="{% if m.vencida %}row-vencida{% elif m.status == 'agendada' %}row-agendada{% endif %}">
+            <td><input type="checkbox" name="ids" value="{{ m.pk }}" class="row-check"></td>
+            <td style="white-space:nowrap;">{{ m.data|date:"d/m/Y" }}</td>
+            <td><strong>{{ m.veiculo.placa }}</strong><br><span style="font-size:.8rem;color:#64748b;">{{ m.veiculo.marca }} {{ m.veiculo.modelo }}</span></td>
+            <td><span class="badge badge-tipo">{{ m.get_tipo_display }}</span></td>
+            <td>{{ m.descricao }}</td>
+            <td>{{ m.km_manutencao|default:"—" }}</td>
+            <td>{% if m.valor %}R$ {{ m.valor|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td>{{ m.oficina|default:"—" }}</td>
+            <td style="white-space:nowrap;">{{ m.proxima_revisao|date:"d/m/Y"|default:"—" }}</td>
+            <td>
+              {% if m.vencida %}
+                <span class="badge badge-vencida">⚠️ Vencida</span>
+              {% elif m.status == 'agendada' %}
+                <span class="badge badge-agendada">📅 Agendada</span>
+              {% else %}
+                <span class="badge badge-realizada">✅ Realizada</span>
+              {% endif %}
+            </td>
+            <td style="white-space:nowrap;">
+              <a href="{% url 'frota_manutencao_edit' m.pk %}" class="btn btn-outline" style="padding:.3rem .75rem;font-size:.8rem;">Editar</a>
+              <a href="{% url 'frota_manutencao_delete' m.pk %}" class="btn btn-danger" style="padding:.3rem .75rem;font-size:.8rem;">Excluir</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div style="display:flex;justify-content:center;gap:.5rem;padding:1rem;">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if veiculo_selecionado %}&veiculo={{ veiculo_selecionado }}{% endif %}{% if status_selecionado %}&status={{ status_selecionado }}{% endif %}" class="btn btn-outline">← Anterior</a>{% endif %}
+      <span style="padding:.5rem 1rem;font-size:.88rem;color:#64748b;">Pág. {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if veiculo_selecionado %}&veiculo={{ veiculo_selecionado }}{% endif %}{% if status_selecionado %}&status={{ status_selecionado }}{% endif %}" class="btn btn-outline">Próxima →</a>{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div style="text-align:center;padding:3rem;color:#94a3b8;">
+      <div style="font-size:2.5rem;margin-bottom:.75rem;">🔧</div>
+      <p>Nenhuma manutenção registrada.</p>
+      <a href="{% url 'frota_manutencao_create' %}" class="btn btn-primary" style="margin-top:1rem;">Registrar manutenção</a>
+    </div>
+    {% endif %}
+  </div>
+</form>
+
+<script>
+const checkAll  = document.getElementById('check-all');
+const bulkBar   = document.getElementById('bulk-bar');
+const bulkCount = document.getElementById('bulk-count');
+
+function atualizarBarra() {
+  const marcados = document.querySelectorAll('.row-check:checked').length;
+  bulkBar.classList.toggle('visible', marcados > 0);
+  bulkCount.textContent = marcados + ' selecionada(s)';
+  checkAll.indeterminate = marcados > 0 && marcados < document.querySelectorAll('.row-check').length;
+  checkAll.checked = marcados > 0 && marcados === document.querySelectorAll('.row-check').length;
+}
+
+function desmarcarTodos() {
+  document.querySelectorAll('.row-check, #check-all').forEach(c => c.checked = false);
+  atualizarBarra();
+}
+
+checkAll.addEventListener('change', () => {
+  document.querySelectorAll('.row-check').forEach(c => c.checked = checkAll.checked);
+  atualizarBarra();
+});
+document.querySelectorAll('.row-check').forEach(c => c.addEventListener('change', atualizarBarra));
+</script>
+{% endblock %}
