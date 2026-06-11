@@ -60,16 +60,17 @@
       </div>
       <div class="field">
         <label class="field-label">KM Inicial *</label>
-        <input class="field-input {% if erro_km %}erro{% endif %}"
+        <input class="field-input {% if erro_km_inicial %}erro{% endif %}"
                type="number" name="km_inicial"
                value="{{ post.km_inicial|default:'' }}{% if not post and viagem %}{{ viagem.km_inicial }}{% endif %}" required min="0">
+        {% if erro_km_inicial %}<span style="color:#dc2626;font-size:.8rem;">{{ erro_km_inicial }}</span>{% endif %}
       </div>
       <div class="field">
         <label class="field-label">KM Final</label>
-        <input class="field-input {% if erro_km %}erro{% endif %}"
+        <input class="field-input {% if erro_km_final %}erro{% endif %}"
                type="number" name="km_final"
                value="{{ post.km_final|default:'' }}{% if not post and viagem %}{{ viagem.km_final|default:'' }}{% endif %}" min="0">
-        {% if erro_km %}<span style="color:#dc2626;font-size:.8rem;grid-column:1/-1;">{{ erro_km }}</span>{% endif %}
+        {% if erro_km_final %}<span style="color:#dc2626;font-size:.8rem;">{{ erro_km_final }}</span>{% endif %}
       </div>
       <div class="field">
         <label class="field-label">Status *</label>

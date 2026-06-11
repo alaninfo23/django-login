@@ -14,6 +14,13 @@ def _veiculo_da_empresa(pk, empresa):
     return get_object_or_404(Veiculo, pk=pk, empresa=empresa)
 
 
+def _erro_km_menor(km_informado, veiculo):
+    """Retorna mensagem de erro se km_informado < veiculo.km_atual, senão None."""
+    if km_informado and int(km_informado) < veiculo.km_atual:
+        return f'KM informado ({km_informado}) é menor que o KM atual do veículo ({veiculo.km_atual} km).'
+    return None
+
+
 # ── Dashboard ──────────────────────────────────────────────────────────────────
 
 @login_required
@@ -275,6 +282,13 @@ def abastecimento_list(request):
 def abastecimento_create(request):
     if request.method == 'POST':
         veiculo = _veiculo_da_empresa(request.POST.get('veiculo'), request.empresa)
+        erro = _erro_km_menor(request.POST.get('km_atual'), veiculo)
+        if erro:
+            return render(request, 'frota/abastecimento_form.html', {
+                'ab': None,
+                'veiculos': Veiculo.objects.filter(empresa=request.empresa),
+                'erro_km': erro, 'post': request.POST,
+            })
         ab = Abastecimento.objects.create(
             veiculo=veiculo,
             data=request.POST.get('data'),
@@ -296,7 +310,15 @@ def abastecimento_create(request):
 def abastecimento_edit(request, pk):
     ab = get_object_or_404(Abastecimento, pk=pk, veiculo__empresa=request.empresa)
     if request.method == 'POST':
-        ab.veiculo      = _veiculo_da_empresa(request.POST.get('veiculo'), request.empresa)
+        veiculo = _veiculo_da_empresa(request.POST.get('veiculo'), request.empresa)
+        erro = _erro_km_menor(request.POST.get('km_atual'), veiculo)
+        if erro:
+            return render(request, 'frota/abastecimento_form.html', {
+                'ab': ab,
+                'veiculos': Veiculo.objects.filter(empresa=request.empresa),
+                'erro_km': erro, 'post': request.POST,
+            })
+        ab.veiculo      = veiculo
         ab.data         = request.POST.get('data')
         ab.km_atual     = request.POST.get('km_atual')
         ab.litros       = request.POST.get('litros')
@@ -304,6 +326,7 @@ def abastecimento_edit(request, pk):
         ab.posto        = request.POST.get('posto', '')
         ab.observacoes  = request.POST.get('observacoes', '')
         ab.save()
+        veiculo.atualizar_km(ab.km_atual)
         return redirect('frota_abastecimentos')
     return render(request, 'frota/abastecimento_form.html', {
         'ab': ab,
@@ -375,6 +398,14 @@ def manutencao_create(request):
     if request.method == 'POST':
         veiculo = _veiculo_da_empresa(request.POST.get('veiculo'), request.empresa)
         km = request.POST.get('km_manutencao') or None
+        erro = _erro_km_menor(km, veiculo)
+        if erro:
+            return render(request, 'frota/manutencao_form.html', {
+                'veiculos': Veiculo.objects.filter(empresa=request.empresa),
+                'tipo_choices': Manutencao.Tipo,
+                'status_choices': Manutencao.Status,
+                'erro_km': erro, 'post': request.POST,
+            })
         Manutencao.objects.create(
             veiculo=veiculo,
             tipo=request.POST.get('tipo'),
@@ -402,7 +433,17 @@ def manutencao_edit(request, pk):
     man = get_object_or_404(Manutencao, pk=pk, veiculo__empresa=request.empresa)
     if request.method == 'POST':
         km = request.POST.get('km_manutencao') or None
-        man.veiculo         = _veiculo_da_empresa(request.POST.get('veiculo'), request.empresa)
+        veiculo = _veiculo_da_empresa(request.POST.get('veiculo'), request.empresa)
+        erro = _erro_km_menor(km, veiculo)
+        if erro:
+            return render(request, 'frota/manutencao_form.html', {
+                'man': man,
+                'veiculos': Veiculo.objects.filter(empresa=request.empresa),
+                'tipo_choices': Manutencao.Tipo,
+                'status_choices': Manutencao.Status,
+                'erro_km': erro, 'post': request.POST,
+            })
+        man.veiculo         = veiculo
         man.tipo            = request.POST.get('tipo')
         man.descricao       = request.POST.get('descricao', '')
         man.status          = request.POST.get('status', man.status)
@@ -500,8 +541,8 @@ def _ctx_viagem(empresa):
 
 def _validar_km_viagem(km_inicial, km_final):
     if km_final and int(km_final) < int(km_inicial):
-        return 'KM final não pode ser menor que KM inicial.'
-    return None
+        return None, 'KM final não pode ser menor que KM inicial.'
+    return None, None
 
 
 @login_required
@@ -510,12 +551,17 @@ def viagem_create(request):
     if request.method == 'POST':
         km_inicial = request.POST.get('km_inicial')
         km_final   = request.POST.get('km_final') or None
-        erro = _validar_km_viagem(km_inicial, km_final)
-        if erro:
+        _, erro_km_final = _validar_km_viagem(km_inicial, km_final)
+        if erro_km_final:
             ctx = _ctx_viagem(request.empresa)
-            ctx.update({'erro_km': erro, 'post': request.POST})
+            ctx.update({'erro_km_final': erro_km_final, 'post': request.POST})
             return render(request, 'frota/viagem_form.html', ctx)
         veiculo = _veiculo_da_empresa(request.POST.get('veiculo'), request.empresa)
+        erro_km_inicial = _erro_km_menor(km_inicial, veiculo)
+        if erro_km_inicial:
+            ctx = _ctx_viagem(request.empresa)
+            ctx.update({'erro_km_inicial': erro_km_inicial, 'post': request.POST})
+            return render(request, 'frota/viagem_form.html', ctx)
         if veiculo.status != Veiculo.Status.ATIVO:
             ctx = _ctx_viagem(request.empresa)
             ctx['erro_veiculo'] = f'Veículo {veiculo.placa} está "{veiculo.get_status_display()}" e não pode ser usado em viagens.'
@@ -556,13 +602,18 @@ def viagem_edit(request, pk):
     if request.method == 'POST':
         km_inicial = request.POST.get('km_inicial')
         km_final   = request.POST.get('km_final') or None
-        erro = _validar_km_viagem(km_inicial, km_final)
-        if erro:
+        _, erro_km_final = _validar_km_viagem(km_inicial, km_final)
+        if erro_km_final:
             ctx = _ctx_viagem(request.empresa)
-            ctx.update({'viagem': viagem, 'erro_km': erro, 'post': request.POST})
+            ctx.update({'viagem': viagem, 'erro_km_final': erro_km_final, 'post': request.POST})
             return render(request, 'frota/viagem_form.html', ctx)
         motorista_pk = request.POST.get('motorista') or None
         viagem.veiculo    = _veiculo_da_empresa(request.POST.get('veiculo'), request.empresa)
+        erro_km_inicial = _erro_km_menor(km_inicial, viagem.veiculo)
+        if erro_km_inicial:
+            ctx = _ctx_viagem(request.empresa)
+            ctx.update({'viagem': viagem, 'erro_km_inicial': erro_km_inicial, 'post': request.POST})
+            return render(request, 'frota/viagem_form.html', ctx)
         if viagem.veiculo.status != Veiculo.Status.ATIVO:
             ctx = _ctx_viagem(request.empresa)
             ctx['viagem'] = viagem

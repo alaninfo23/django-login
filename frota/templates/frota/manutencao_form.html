@@ -32,12 +32,12 @@
       <div class="status-tabs">
         <label>
           <input type="radio" name="status" value="agendada" id="rb-agendada"
-            {% if man.status == 'agendada' %}checked{% endif %} style="display:none;">
+            {% if post.status == 'agendada' or man.status == 'agendada' %}checked{% endif %} style="display:none;">
           <span class="status-tab" id="tab-agendada">📅 Agendada</span>
         </label>
         <label>
           <input type="radio" name="status" value="realizada" id="rb-realizada"
-            {% if not man or man.status == 'realizada' %}checked{% endif %} style="display:none;">
+            {% if post.status == 'realizada' or not man and not post or man.status == 'realizada' %}checked{% endif %} style="display:none;">
           <span class="status-tab" id="tab-realizada">✅ Realizada</span>
         </label>
       </div>
@@ -49,7 +49,7 @@
         <select class="field-input" name="veiculo" required>
           <option value="">Selecione...</option>
           {% for v in veiculos %}
-          <option value="{{ v.pk }}" {% if man.veiculo_id == v.pk %}selected{% endif %}>{{ v.placa }} — {{ v.marca }} {{ v.modelo }}</option>
+          <option value="{{ v.pk }}" {% if post.veiculo == v.pk|stringformat:"s" or man.veiculo_id == v.pk %}selected{% endif %}>{{ v.placa }} — {{ v.marca }} {{ v.modelo }}</option>
           {% endfor %}
         </select>
       </div>
@@ -57,35 +57,36 @@
         <label class="field-label">Tipo *</label>
         <select class="field-input" name="tipo" required>
           {% for t in tipo_choices %}
-          <option value="{{ t.value }}" {% if man.tipo == t.value %}selected{% endif %}>{{ t.label }}</option>
+          <option value="{{ t.value }}" {% if post.tipo == t.value or man.tipo == t.value %}selected{% endif %}>{{ t.label }}</option>
           {% endfor %}
         </select>
       </div>
       <div class="field">
         <label class="field-label" id="label-data">Data *</label>
-        <input class="field-input" type="date" name="data" value="{{ man.data|date:'Y-m-d'|default:'' }}" required>
+        <input class="field-input" type="date" name="data" value="{% if post %}{{ post.data }}{% else %}{{ man.data|date:'Y-m-d'|default:'' }}{% endif %}" required>
       </div>
       <div class="field full">
         <label class="field-label">Descrição *</label>
-        <input class="field-input" name="descricao" value="{{ man.descricao|default:'' }}" required maxlength="500">
+        <input class="field-input" name="descricao" value="{% if post %}{{ post.descricao }}{% else %}{{ man.descricao|default:'' }}{% endif %}" required maxlength="500">
       </div>
 
       {# campos só relevantes para realizada #}
       <div class="field" id="campos-realizada">
         <label class="field-label">Oficina</label>
-        <input class="field-input" name="oficina" value="{{ man.oficina|default:'' }}" maxlength="200">
+        <input class="field-input" name="oficina" value="{% if post %}{{ post.oficina }}{% else %}{{ man.oficina|default:'' }}{% endif %}" maxlength="200">
       </div>
       <div class="field" id="campo-valor">
         <label class="field-label">Valor (R$)</label>
-        <input class="field-input" type="number" name="valor" value="{{ man.valor|default:'' }}" step="0.01" min="0">
+        <input class="field-input" type="number" name="valor" value="{% if post %}{{ post.valor }}{% else %}{{ man.valor|default:'' }}{% endif %}" step="0.01" min="0">
       </div>
       <div class="field" id="campo-km">
         <label class="field-label">KM na Manutenção</label>
-        <input class="field-input" type="number" name="km_manutencao" value="{{ man.km_manutencao|default:'' }}" min="0">
+        <input class="field-input {% if erro_km %}erro{% endif %}" type="number" name="km_manutencao" value="{% if post %}{{ post.km_manutencao }}{% else %}{{ man.km_manutencao|default:'' }}{% endif %}" min="0">
+        {% if erro_km %}<span style="color:#dc2626;font-size:.8rem;">{{ erro_km }}</span>{% endif %}
       </div>
       <div class="field">
         <label class="field-label">Próxima Revisão</label>
-        <input class="field-input" type="date" name="proxima_revisao" value="{{ man.proxima_revisao|date:'Y-m-d'|default:'' }}">
+        <input class="field-input" type="date" name="proxima_revisao" value="{% if post %}{{ post.proxima_revisao }}{% else %}{{ man.proxima_revisao|date:'Y-m-d'|default:'' }}{% endif %}">
       </div>
     </div>
 

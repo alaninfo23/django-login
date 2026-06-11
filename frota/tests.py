@@ -567,7 +567,7 @@ class AbastecimentoEditTests(FrotaViewBase):
     def test_edit_atualiza_litros(self):
         self.client.post(reverse('frota_abastecimento_edit', args=[self.ab.pk]), {
             'veiculo': self.veiculo.pk, 'data': '2026-06-01',
-            'km_atual': 500, 'litros': '60.00', 'valor_total': '300.00',
+            'km_atual': 1000, 'litros': '60.00', 'valor_total': '300.00',
         })
         self.ab.refresh_from_db()
         from decimal import Decimal
@@ -576,7 +576,7 @@ class AbastecimentoEditTests(FrotaViewBase):
     def test_edit_redireciona_apos_salvar(self):
         resp = self.client.post(reverse('frota_abastecimento_edit', args=[self.ab.pk]), {
             'veiculo': self.veiculo.pk, 'data': '2026-06-01',
-            'km_atual': 500, 'litros': '55.00', 'valor_total': '275.00',
+            'km_atual': 1000, 'litros': '55.00', 'valor_total': '275.00',
         })
         self.assertRedirects(resp, reverse('frota_abastecimentos'))
 

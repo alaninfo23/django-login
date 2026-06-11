@@ -26,33 +26,34 @@
         <select class="field-input" name="veiculo" required>
           <option value="">Selecione...</option>
           {% for v in veiculos %}
-          <option value="{{ v.pk }}" {% if ab.veiculo_id == v.pk %}selected{% endif %}>{{ v.placa }} — {{ v.marca }} {{ v.modelo }}</option>
+          <option value="{{ v.pk }}" {% if post.veiculo == v.pk|stringformat:"s" or ab.veiculo_id == v.pk %}selected{% endif %}>{{ v.placa }} — {{ v.marca }} {{ v.modelo }}</option>
           {% endfor %}
         </select>
       </div>
       <div class="field">
         <label class="field-label">Data *</label>
-        <input class="field-input" type="date" name="data" value="{{ ab.data|date:'Y-m-d'|default:'' }}" required>
+        <input class="field-input" type="date" name="data" value="{% if post %}{{ post.data }}{% else %}{{ ab.data|date:'Y-m-d'|default:'' }}{% endif %}" required>
       </div>
       <div class="field">
         <label class="field-label">KM Atual *</label>
-        <input class="field-input" type="number" name="km_atual" value="{{ ab.km_atual|default:'' }}" required min="0">
+        <input class="field-input {% if erro_km %}erro{% endif %}" type="number" name="km_atual" value="{% if post %}{{ post.km_atual }}{% else %}{{ ab.km_atual|default:'' }}{% endif %}" required min="0">
+        {% if erro_km %}<span style="color:#dc2626;font-size:.8rem;">{{ erro_km }}</span>{% endif %}
       </div>
       <div class="field">
         <label class="field-label">Litros *</label>
-        <input class="field-input" type="number" name="litros" value="{{ ab.litros|default:'' }}" required step="0.01" min="0.01">
+        <input class="field-input" type="number" name="litros" value="{% if post %}{{ post.litros }}{% else %}{{ ab.litros|default:'' }}{% endif %}" required step="0.01" min="0.01">
       </div>
       <div class="field">
         <label class="field-label">Valor Total (R$) *</label>
-        <input class="field-input" type="number" name="valor_total" value="{{ ab.valor_total|default:'' }}" required step="0.01" min="0.01">
+        <input class="field-input" type="number" name="valor_total" value="{% if post %}{{ post.valor_total }}{% else %}{{ ab.valor_total|default:'' }}{% endif %}" required step="0.01" min="0.01">
       </div>
       <div class="field full">
         <label class="field-label">Posto</label>
-        <input class="field-input" name="posto" value="{{ ab.posto|default:'' }}" maxlength="200">
+        <input class="field-input" name="posto" value="{% if post %}{{ post.posto }}{% else %}{{ ab.posto|default:'' }}{% endif %}" maxlength="200">
       </div>
       <div class="field full">
         <label class="field-label">Observações</label>
-        <textarea class="field-input" name="observacoes" rows="2">{{ ab.observacoes|default:'' }}</textarea>
+        <textarea class="field-input" name="observacoes" rows="2">{% if post %}{{ post.observacoes }}{% else %}{{ ab.observacoes|default:'' }}{% endif %}</textarea>
       </div>
     </div>
     <div style="display:flex;gap:.75rem;margin-top:1.5rem;">
